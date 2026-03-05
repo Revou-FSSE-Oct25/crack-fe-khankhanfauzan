@@ -18,10 +18,34 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { isValidEmail } from "@/lib/utils";
 
 function Page() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const {
+        register,
+        handleSubmit,
+        watch,
+        formState: { errors },
+    } = useForm<{
+        fullname: string;
+        email: string;
+        whatsapp: string;
+        password: string;
+        confirmPassword: string;
+    }>();
+
+    const onSubmit = (data: {
+        fullname: string;
+        email: string;
+        whatsapp: string;
+        password: string;
+        confirmPassword: string;
+    }) => {
+        console.log("register submit", data);
+    };
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen">
@@ -41,10 +65,10 @@ function Page() {
                         <p>Buat akun Emerald Kos Anda</p>
                     </div>
                     <div className="bg-white w-2/4 p-4 text-start">
-                        <form action="">
-                            <FieldSet className="w-full">
+                        <form onSubmit={handleSubmit(onSubmit)}>
+                            <FieldSet className="w-full gap-4">
                                 <h2 className="font-bold text-2xl">Register</h2>
-                                <FieldGroup>
+                                <FieldGroup className="gap-0">
                                     <Field>
                                         <FieldLabel htmlFor="fullname">
                                             Fullname
@@ -54,11 +78,23 @@ function Page() {
                                                 id="fullname"
                                                 type="text"
                                                 placeholder="John Doe"
+                                                aria-invalid={
+                                                    errors.fullname
+                                                        ? true
+                                                        : undefined
+                                                }
+                                                {...register("fullname", {
+                                                    required:
+                                                        "Nama wajib diisi",
+                                                })}
                                             />
                                             <InputGroupAddon>
                                                 <UserIcon />
                                             </InputGroupAddon>
                                         </InputGroup>
+                                        <p className="text-destructive text-sm min-h-5">
+                                            {errors.fullname?.message?.toString()}
+                                        </p>
                                     </Field>
 
                                     <Field>
@@ -68,13 +104,28 @@ function Page() {
                                         <InputGroup>
                                             <InputGroupInput
                                                 id="email"
-                                                type="text"
+                                                type="email"
                                                 placeholder="example@mail.com"
+                                                aria-invalid={
+                                                    errors.email
+                                                        ? true
+                                                        : undefined
+                                                }
+                                                {...register("email", {
+                                                    required:
+                                                        "Email wajib diisi",
+                                                    validate: (v) =>
+                                                        isValidEmail(v) ||
+                                                        "Email tidak valid",
+                                                })}
                                             />
                                             <InputGroupAddon>
                                                 <MailIcon />
                                             </InputGroupAddon>
                                         </InputGroup>
+                                        <p className="text-destructive text-sm min-h-5">
+                                            {errors.email?.message?.toString()}
+                                        </p>
                                     </Field>
 
                                     <Field>
@@ -86,11 +137,23 @@ function Page() {
                                                 id="whatsapp"
                                                 type="tel"
                                                 placeholder="+62 812-1234-5678"
+                                                aria-invalid={
+                                                    errors.whatsapp
+                                                        ? true
+                                                        : undefined
+                                                }
+                                                {...register("whatsapp", {
+                                                    required:
+                                                        "Nomor WhatsApp wajib diisi",
+                                                })}
                                             />
                                             <InputGroupAddon>
                                                 <PhoneIcon />
                                             </InputGroupAddon>
                                         </InputGroup>
+                                        <p className="text-destructive text-sm min-h-5">
+                                            {errors.whatsapp?.message?.toString()}
+                                        </p>
                                     </Field>
 
                                     <Field>
@@ -106,6 +169,20 @@ function Page() {
                                                         : "password"
                                                 }
                                                 placeholder="••••••••"
+                                                aria-invalid={
+                                                    errors.password
+                                                        ? true
+                                                        : undefined
+                                                }
+                                                {...register("password", {
+                                                    required:
+                                                        "Password wajib diisi",
+                                                    minLength: {
+                                                        value: 8,
+                                                        message:
+                                                            "Minimal 8 karakter",
+                                                    },
+                                                })}
                                             />
                                             <button
                                                 type="button"
@@ -127,6 +204,9 @@ function Page() {
                                                 <LockIcon />
                                             </InputGroupAddon>
                                         </InputGroup>
+                                        <p className="text-destructive text-sm min-h-5">
+                                            {errors.password?.message?.toString()}
+                                        </p>
                                     </Field>
 
                                     <Field>
@@ -142,6 +222,24 @@ function Page() {
                                                         : "password"
                                                 }
                                                 placeholder="••••••••"
+                                                aria-invalid={
+                                                    errors.confirmPassword
+                                                        ? true
+                                                        : undefined
+                                                }
+                                                {...register(
+                                                    "confirmPassword",
+                                                    {
+                                                        required:
+                                                            "Konfirmasi password wajib diisi",
+                                                        validate: (v) =>
+                                                            v ===
+                                                                watch(
+                                                                    "password",
+                                                                ) ||
+                                                            "Konfirmasi password tidak cocok",
+                                                    },
+                                                )}
                                             />
                                             <button
                                                 type="button"
@@ -163,13 +261,21 @@ function Page() {
                                                 <LockIcon />
                                             </InputGroupAddon>
                                         </InputGroup>
+                                        <p className="text-destructive text-sm min-h-5">
+                                            {errors.confirmPassword?.message?.toString()}
+                                        </p>
                                     </Field>
 
-                                    <Button className="rounded-full font-semibold">
+                                    <Button
+                                        type="submit"
+                                        className="rounded-full font-semibold my-2"
+                                    >
                                         Daftar
                                     </Button>
-                                    <div className="flex justify-center text-center items-center">
-                                        <p>Sudah punya akun? </p>
+                                    <div className="flex justify-center text-center items-center mt-2">
+                                        <p className="text-muted-foreground text-sm">
+                                            Sudah punya akun?{" "}
+                                        </p>
                                         <Link href="/login">
                                             <Button variant="link">
                                                 Masuk Sekarang

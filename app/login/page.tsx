@@ -18,9 +18,25 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { isValidEmail } from "@/lib/utils";
 
 function Page() {
     const [showPassword, setShowPassword] = useState(false);
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm<{ email: string; password: string; remember: boolean }>();
+
+    const onSubmit = (data: {
+        email: string;
+        password: string;
+        remember: boolean;
+    }) => {
+        // Submit handler placeholder
+        console.log("login submit", data);
+    };
     return (
         <div className="flex flex-col items-center justify-center min-h-screen">
             <main className="flex flex-col items-center justify-center w-full flex-1 px-12 text-center">
@@ -39,10 +55,10 @@ function Page() {
                         <p>Masuk ke akun Emerald Kos Anda</p>
                     </div>
                     <div className="bg-white w-2/4 p-4 text-start">
-                        <form action="">
-                            <FieldSet className="w-full">
+                        <form onSubmit={handleSubmit(onSubmit)}>
+                            <FieldSet className="w-full gap-4">
                                 <h2 className="font-bold text-2xl">Login</h2>
-                                <FieldGroup>
+                                <FieldGroup className="gap-0">
                                     <Field>
                                         <FieldLabel htmlFor="email">
                                             Email
@@ -50,13 +66,28 @@ function Page() {
                                         <InputGroup>
                                             <InputGroupInput
                                                 id="email"
-                                                type="text"
+                                                type="email"
                                                 placeholder="example@mail.com"
+                                                aria-invalid={
+                                                    errors.email
+                                                        ? true
+                                                        : undefined
+                                                }
+                                                {...register("email", {
+                                                    required:
+                                                        "Email wajib diisi",
+                                                    validate: (v) =>
+                                                        isValidEmail(v) ||
+                                                        "Email tidak valid",
+                                                })}
                                             />
                                             <InputGroupAddon>
                                                 <MailIcon />
                                             </InputGroupAddon>
                                         </InputGroup>
+                                        <p className="text-destructive text-sm min-h-5">
+                                            {errors.email?.message?.toString()}
+                                        </p>
                                     </Field>
                                     <Field>
                                         <FieldLabel htmlFor="password">
@@ -72,6 +103,20 @@ function Page() {
                                                         : "password"
                                                 }
                                                 placeholder="••••••••"
+                                                aria-invalid={
+                                                    errors.password
+                                                        ? true
+                                                        : undefined
+                                                }
+                                                {...register("password", {
+                                                    required:
+                                                        "Password wajib diisi",
+                                                    minLength: {
+                                                        value: 8,
+                                                        message:
+                                                            "Minimal 8 karakter",
+                                                    },
+                                                })}
                                             />
                                             <button
                                                 type="button"
@@ -94,30 +139,39 @@ function Page() {
                                                 <LockIcon />
                                             </InputGroupAddon>
                                         </InputGroup>
+                                        <p className="text-destructive text-sm min-h-5">
+                                            {errors.password?.message?.toString()}
+                                        </p>
                                     </Field>
 
                                     <div className="flex">
                                         <Field orientation="horizontal">
                                             <Checkbox
                                                 id="terms-checkbox"
-                                                name="terms-checkbox"
+                                                {...register("remember")}
                                             />
                                             <Label htmlFor="terms-checkbox">
-                                                Remember Me
+                                                Ingat Saya
                                             </Label>
                                         </Field>
 
-                                        <Button variant="link">
-                                            {" "}
-                                            Lupa Password?
+                                        <Button variant="link" asChild>
+                                            <Link href="/forgot-password">
+                                                Lupa Password?
+                                            </Link>
                                         </Button>
                                     </div>
 
-                                    <Button className="rounded-full font-semibold">
+                                    <Button
+                                        type="submit"
+                                        className="rounded-full font-semibold my-2"
+                                    >
                                         Masuk
                                     </Button>
-                                    <div className="flex justify-center text-center items-center">
-                                        <p>Belum punya akun? </p>
+                                    <div className="flex justify-center text-center items-center mt-2">
+                                        <p className="text-muted-foreground text-sm">
+                                            Belum punya akun?
+                                        </p>
                                         <Link href="/register">
                                             <Button variant="link">
                                                 Daftar Sekarang
