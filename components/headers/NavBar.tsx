@@ -68,7 +68,7 @@ export default function NavBar() {
                     <p className="text-xl font-bold">Emerald House</p>
                 </div>
             </Link>
-            <NavigationMenuList>
+            {/* <NavigationMenuList>
                 <NavigationMenuItem>
                     <NavigationMenuTrigger>
                         Getting started
@@ -153,7 +153,7 @@ export default function NavBar() {
                         <Link href="/docs">Docs</Link>
                     </NavigationMenuLink>
                 </NavigationMenuItem>
-            </NavigationMenuList>
+            </NavigationMenuList> */}
             <Link href="/login">
                 <Button className="rounded-2xl" size="lg">
                     SIGN IN

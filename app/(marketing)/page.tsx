@@ -26,9 +26,7 @@ function page() {
             <div className="grid md:grid-cols-2 gap-8 p-6 pt-0">
                 <div className="flex flex-col gap-6">
                     <div className="flex flex-col gap-1">
-                        <h1 className="text-3xl font-bold">
-                            Emerald Residence
-                        </h1>
+                        <h1 className="text-3xl font-bold">Emerald House</h1>
                         <p className="text-muted-foreground">
                             Jl. Pasaeno Lrg. Swadaya, Kota Kendari
                         </p>
@@ -51,14 +49,14 @@ function page() {
                                 <p className="text-muted-foreground">
                                     Kapasitas
                                 </p>
-                                <p>1 Orang</p>
+                                <p>2 Orang</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
                             <BedIcon />
                             <div className="flex flex-col">
                                 <p className="text-muted-foreground">Kasur</p>
-                                <p>Single</p>
+                                <p>Queen</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -74,11 +72,11 @@ function page() {
                             Tentang Properti
                         </h2>
                         <p className="text-muted-foreground">
-                            Emerald Residence menawarkan hunian kost eksklusif
+                            Emerald House menawarkan hunian kost eksklusif
                             dengan desain modern minimalis di lokasi strategis
-                            Kota Kendari. The Emerald Residence memberikan
-                            kenyamanan maksimal bagi penghuni dengan fasilitas
-                            lengkap dan sistem manajemen digital.
+                            Kota Kendari. Emerald House memberikan kenyamanan
+                            maksimal bagi penghuni dengan fasilitas lengkap dan
+                            sistem manajemen digital.
                         </p>
                     </div>
                     <div className="flex flex-col gap-3">
@@ -224,11 +222,11 @@ function page() {
                         </div>
                     </div>
                 </div>
-                <div className="flex flex-col gap-4">
-                    <div className="relative w-full overflow-hidden rounded-3xl aspect-4/3">
+                <div className="flex flex-col gap-4 md:sticky md:top-6 md:self-start">
+                    <div className="relative w-full overflow-hidden rounded-3xl aspect-4/3 md:sticky md:top-6">
                         <Image
                             src="https://cdn.dribbble.com/userupload/7081336/file/original-941b828d84271ab086e87f6c8fa8ebb3.png?resize=752x&vertical=center"
-                            alt="Emerald Residence"
+                            alt="Emerald House"
                             fill
                             sizes="(min-width: 768px) 50vw, 100vw"
                             className="object-cover"

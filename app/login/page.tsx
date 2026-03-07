@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { isValidEmail } from "@/lib/utils";
+import { redirect } from "next/navigation";
 
 function Page() {
     const [showPassword, setShowPassword] = useState(false);
@@ -36,6 +37,8 @@ function Page() {
     }) => {
         // Submit handler placeholder
         console.log("login submit", data);
+
+        redirect("/user");
     };
     return (
         <div className="flex flex-col items-center justify-center min-h-screen">
