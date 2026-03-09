@@ -1,19 +1,20 @@
+import { PageHeader } from "@/components/layout/PageHeader";
 import { AppSidebar } from "@/components/sidebars/AppSidebar";
-import {
-    SidebarInset,
-    SidebarProvider,
-    SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import React from "react";
 
 export default function UserLayout({
     children,
 }: Readonly<{ children: React.ReactNode }>) {
     return (
-        // <SidebarProvider>
-        //     <AppSidebar variant="inset" />
-        //     <SidebarInset className="overflow-hidden">{children}</SidebarInset>
-        // </SidebarProvider>
-        <main>{children}</main>
+        <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset className="overflow-hidden">
+                <main>
+                    <PageHeader></PageHeader>
+                    {children}
+                </main>
+            </SidebarInset>
+        </SidebarProvider>
     );
 }

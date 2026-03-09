@@ -30,19 +30,19 @@ export async function proxy(req: NextRequest) {
         }
     }
 
-    if (isProtectedRoute && !session?.userId) {
-        const loginUrl = new URL("/login", req.url);
-        loginUrl.searchParams.set("redirect", path);
-        return NextResponse.redirect(loginUrl);
-    }
+    // if (isProtectedRoute && !session?.userId) {
+    //     const loginUrl = new URL("/login", req.url);
+    //     loginUrl.searchParams.set("redirect", path);
+    //     return NextResponse.redirect(loginUrl);
+    // }
 
-    if (isPublicRoute && path === "/login" && session?.userId) {
-        return NextResponse.redirect(new URL("/", req.url));
-    }
+    // if (isPublicRoute && path === "/login" && session?.userId) {
+    //     return NextResponse.redirect(new URL("/", req.url));
+    // }
 
-    if (path.startsWith("/admin") && session?.role !== "admin") {
-        return NextResponse.redirect(new URL("/", req.url));
-    }
+    // if (path.startsWith("/admin") && session?.role !== "admin") {
+    //     return NextResponse.redirect(new URL("/", req.url));
+    // }
 
     if (path.startsWith("/dashboard") && session?.role !== "admin") {
         return NextResponse.redirect(new URL("/", req.url));

@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { IconSurface } from "@/components/ui/icon-surface";
 import {
     BathIcon,
     BedIcon,
@@ -84,49 +85,67 @@ function page() {
                         <div className="grid grid-cols-2 gap-3">
                             <Card>
                                 <CardContent className="flex gap-2 items-center">
-                                    <div className="p-2 bg-accent rounded-xl">
+                                    <IconSurface
+                                        bgClass="bg-accent"
+                                        rounded="rounded-xl"
+                                    >
                                         <WifiIcon color="var(--color-primary)" />
-                                    </div>
+                                    </IconSurface>
                                     Wi‑Fi
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="flex gap-2 items-center">
-                                    <div className="p-2 bg-accent rounded-xl">
+                                    <IconSurface
+                                        bgClass="bg-accent"
+                                        rounded="rounded-xl"
+                                    >
                                         <WindIcon color="var(--color-primary)" />
-                                    </div>
+                                    </IconSurface>
                                     AC
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="flex gap-2 items-center">
-                                    <div className="p-2 bg-accent rounded-xl">
+                                    <IconSurface
+                                        bgClass="bg-accent"
+                                        rounded="rounded-xl"
+                                    >
                                         <BathIcon color="var(--color-primary)" />
-                                    </div>
+                                    </IconSurface>
                                     Kamar Mandi Dalam
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="flex gap-2 items-center">
-                                    <div className="p-2 bg-accent rounded-xl">
+                                    <IconSurface
+                                        bgClass="bg-accent"
+                                        rounded="rounded-xl"
+                                    >
                                         <CookingPotIcon color="var(--color-primary)" />
-                                    </div>
+                                    </IconSurface>
                                     Dapur
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="flex gap-2 items-center">
-                                    <div className="p-2 bg-accent rounded-xl">
+                                    <IconSurface
+                                        bgClass="bg-accent"
+                                        rounded="rounded-xl"
+                                    >
                                         <Columns2Icon color="var(--color-primary)" />
-                                    </div>
+                                    </IconSurface>
                                     Lemari Pakaian
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="flex gap-2 items-center">
-                                    <div className="p-2 bg-accent rounded-xl">
+                                    <IconSurface
+                                        bgClass="bg-accent"
+                                        rounded="rounded-xl"
+                                    >
                                         <LampDeskIcon color="var(--color-primary)" />
-                                    </div>
+                                    </IconSurface>
                                     Meja Kerja
                                 </CardContent>
                             </Card>
@@ -272,9 +291,12 @@ function page() {
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
                         <Card>
                             <CardContent className="flex flex-col gap-2 text-start">
-                                <div className="p-2 bg-accent rounded-lg w-min ">
+                                <IconSurface
+                                    bgClass="bg-accent"
+                                    className="w-min"
+                                >
                                     <HomeIcon color="var(--color-primary)" />
-                                </div>
+                                </IconSurface>
                                 <h3 className="font-semibold">
                                     Lokasi Strategis
                                 </h3>
@@ -285,9 +307,12 @@ function page() {
                         </Card>
                         <Card>
                             <CardContent className="flex flex-col gap-2 text-start">
-                                <div className="p-2 bg-accent rounded-lg w-min ">
+                                <IconSurface
+                                    bgClass="bg-accent"
+                                    className="w-min"
+                                >
                                     <ShieldIcon color="var(--color-primary)" />
-                                </div>
+                                </IconSurface>
                                 <h3 className="font-semibold">Keamanan 24/7</h3>
                                 <p className="text-muted-foreground">
                                     CCTV dan sistem keamanan terpadu
@@ -296,9 +321,12 @@ function page() {
                         </Card>
                         <Card>
                             <CardContent className="flex flex-col gap-2 text-start">
-                                <div className="p-2 bg-accent rounded-lg w-min ">
+                                <IconSurface
+                                    bgClass="bg-accent"
+                                    className="w-min"
+                                >
                                     <UsersIcon color="var(--color-primary)" />
-                                </div>
+                                </IconSurface>
                                 <h3 className="font-semibold">
                                     Komunitas Friendly
                                 </h3>

@@ -12,12 +12,15 @@ import { RoomSummaryCard } from "@/components/property/RoomSummaryCard";
 import {
     BathIcon,
     BedIcon,
+    BellIcon,
     CalendarIcon,
     ChevronRightIcon,
     ClockIcon,
     Columns2Icon,
     InfoIcon,
     LampDeskIcon,
+    MessageCircleIcon,
+    UserIcon,
     WifiIcon,
     WindIcon,
     WrenchIcon,
@@ -25,6 +28,9 @@ import {
 import { StatCard } from "@/components/dashboard/StatCard";
 import { NextPaymentCard } from "@/components/payments/NextPaymentCard";
 import { TransactionItem } from "@/components/transactions/TransactionItem";
+import { IconButtonBadge } from "@/components/ui/icon-button-badge";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 function Page() {
     const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
@@ -50,23 +56,6 @@ function Page() {
     const eventsBySelected = events.filter((e) => e.date === selectedDate);
     return (
         <div className="bg-muted h-full">
-            <div className="max-w-7xl mx-auto py-2 px-4 w-full justify-between flex items-center bg-background">
-                <div className="flex gap-2 items-center">
-                    <Avatar size="lg" className="border">
-                        <AvatarImage />
-                        <AvatarFallback className="bg-primary text-white font-bold">
-                            JD
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                        <h1 className="text-lg font-bold">Hello, John!</h1>
-                        <p className="text-sm font-medium text-muted-foreground">
-                            Selamat datang kembali
-                        </p>
-                    </div>
-                </div>
-                <Button>Profile</Button>
-            </div>
             <div className="flex h-full flex-col md:flex-row gap-4 md:gap-8 p-4 md:p-6">
                 <div className="flex flex-col flex-1 gap-4">
                     <RoomSummaryCard
