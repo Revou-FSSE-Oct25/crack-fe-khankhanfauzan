@@ -1,18 +1,37 @@
- "use client";
+"use client";
 import React from "react";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from "@/components/ui/pagination";
 import { BookingRow } from "@/components/bookings/BookingRow";
-import { MOCK_BOOKING_HISTORY, type BookingStatus } from "@/mocks/booking_history";
-import { CalendarIcon, ClockIcon, CircleCheckBigIcon, CreditCardIcon, SearchIcon } from "lucide-react";
+import {
+    MOCK_BOOKING_HISTORY,
+    type BookingStatus,
+} from "@/mocks/booking_history";
+import {
+    CalendarIcon,
+    ClockIcon,
+    CircleCheckBigIcon,
+    CreditCardIcon,
+} from "lucide-react";
 import { format } from "date-fns";
+import { FilterBar } from "@/components/filters/FilterBar";
+import type { DateRange } from "react-day-picker";
 
 function Page() {
     const [search, setSearch] = React.useState("");
-    const [status, setStatus] = React.useState<BookingStatus | "semua">("semua");
+    const [status, setStatus] = React.useState<BookingStatus | "semua">(
+        "semua",
+    );
     const [page, setPage] = React.useState(1);
+    const [date, setDate] = React.useState<DateRange | undefined>();
 
     const all = MOCK_BOOKING_HISTORY.data;
     const pageSize = MOCK_BOOKING_HISTORY.meta.limit;
@@ -45,7 +64,11 @@ function Page() {
         const now = new Date();
         const from = new Date(b.period.start_date).getTime();
         const to = new Date(b.period.end_date).getTime();
-        return b.status !== "cancelled" && now.getTime() >= from && now.getTime() <= to;
+        return (
+            b.status !== "cancelled" &&
+            now.getTime() >= from &&
+            now.getTime() <= to
+        );
     }).length;
     const completedCount = all.filter((b) => b.status === "completed").length;
     const totalPaid = all.reduce((sum, b) => sum + (b.total_paid ?? 0), 0);
@@ -57,58 +80,86 @@ function Page() {
     return (
         <div className="p-4 flex flex-col gap-6">
             <div className="grid grid-cols-4 gap-4">
-                <StatCard icon={CalendarIcon} title="Total Booking" value={totalCount} iconBgClass="bg-blue-50" iconColor="oklch(62.3% 0.214 259.815)" />
-                <StatCard icon={ClockIcon} title="Aktif" value={activeCount} iconBgClass="bg-emerald-50" iconColor="oklch(72.3% 0.219 149.579)" />
-                <StatCard icon={CircleCheckBigIcon} title="Selesai" value={completedCount} iconBgClass="bg-blue-50" iconColor="oklch(62.3% 0.214 259.815)" />
-                <StatCard icon={CreditCardIcon} title="Total Bayar" value={formatAmount(totalPaid)} iconBgClass="bg-emerald-50" iconColor="oklch(72.3% 0.219 149.579)" />
+                <StatCard
+                    icon={CalendarIcon}
+                    title="Total Booking"
+                    value={totalCount}
+                    iconBgClass="bg-blue-50"
+                    iconColor="oklch(62.3% 0.214 259.815)"
+                />
+                <StatCard
+                    icon={ClockIcon}
+                    title="Aktif"
+                    value={activeCount}
+                    iconBgClass="bg-emerald-50"
+                    iconColor="oklch(72.3% 0.219 149.579)"
+                />
+                <StatCard
+                    icon={CircleCheckBigIcon}
+                    title="Selesai"
+                    value={completedCount}
+                    iconBgClass="bg-blue-50"
+                    iconColor="oklch(62.3% 0.214 259.815)"
+                />
+                <StatCard
+                    icon={CreditCardIcon}
+                    title="Total Bayar"
+                    value={formatAmount(totalPaid)}
+                    iconBgClass="bg-emerald-50"
+                    iconColor="oklch(72.3% 0.219 149.579)"
+                />
             </div>
-            <div className="flex gap-4">
-                <InputGroup className="bg-card">
-                    <InputGroupInput
-                        placeholder="Cari booking..."
-                        value={search}
-                        onChange={(e) => {
-                            setSearch(e.target.value);
-                            setPage(1);
-                        }}
-                    />
-                    <InputGroupAddon>
-                        <SearchIcon />
-                    </InputGroupAddon>
-                </InputGroup>
-                <Select
-                    value={status}
-                    onValueChange={(v) => {
+            <FilterBar
+                search={{
+                    value: search,
+                    onChange: (v) => {
+                        setSearch(v);
+                        setPage(1);
+                    },
+                    placeholder: "Cari booking...",
+                }}
+                dateRange={{
+                    value: date,
+                    onChange: setDate,
+                }}
+                select={{
+                    value: status,
+                    onChange: (v) => {
                         setStatus(v as BookingStatus | "semua");
                         setPage(1);
-                    }}
-                >
-                    <SelectTrigger className="bg-card">
-                        <SelectValue placeholder="Pilih Status">
-                            {status === "semua" ? "Semua" : status}
-                        </SelectValue>
-                        <SelectContent>
-                            <SelectItem value="semua">Semua</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                            <SelectItem value="cancelled">Cancelled</SelectItem>
-                            <SelectItem value="expired">Expired</SelectItem>
-                        </SelectContent>
-                    </SelectTrigger>
-                </Select>
-            </div>
+                    },
+                    placeholder: "Pilih Status",
+                    options: [
+                        { value: "semua", label: "Semua" },
+                        { value: "completed", label: "Completed" },
+                        { value: "cancelled", label: "Cancelled" },
+                        { value: "expired", label: "Expired" },
+                    ],
+                }}
+            />
             <div className="flex flex-col gap-4">
                 {pageItems.map((b) => {
                     const isMonthly = b.period.rent_type === "monthly";
-                    const durLabel = isMonthly ? `${b.period.duration} Bulan` : `${b.period.duration} Hari`;
-                    const priceLabel = isMonthly ? `Rp ${(b.total_paid ?? 0) / Math.max(1, b.period.duration)}/bln` : `Rp ${(b.total_paid ?? 0) / Math.max(1, b.period.duration)}/hari`;
+                    const durLabel = isMonthly
+                        ? `${b.period.duration} Bulan`
+                        : `${b.period.duration} Hari`;
+                    const priceLabel = isMonthly
+                        ? `Rp ${(b.total_paid ?? 0) / Math.max(1, b.period.duration)}/bln`
+                        : `Rp ${(b.total_paid ?? 0) / Math.max(1, b.period.duration)}/hari`;
                     return (
                         <BookingRow
                             key={b.booking_id}
                             roomLabel={`Kamar ${b.room.room_id}`}
                             floorLabel={`Lt. ${b.room.floor}`}
                             bookingIdLabel={b.booking_id}
-                            startDateLabel={format(new Date(b.period.start_date), "d MMM yyyy")}
-                            endDateLabel={format(new Date(b.period.end_date), "d MMM yyyy")}
+                            startDateLabel={format(
+                                new Date(b.period.start_date),
+                                "d MMM yyyy",
+                            )}
+                            endDateLabel={format(
+                                new Date(b.period.end_date),
+                                "d MMM yyyy",
+                            )}
                             durationLabel={durLabel}
                             priceLabel={priceLabel}
                             amountLabel={formatAmount(b.total_paid ?? 0)}
@@ -120,7 +171,13 @@ function Page() {
                                       ? "Dibatalkan"
                                       : "Expired"
                             }
-                            actionLabel={b.status === "cancelled" ? undefined : b.status === "completed" ? undefined : "Bayar"}
+                            actionLabel={
+                                b.status === "cancelled"
+                                    ? undefined
+                                    : b.status === "completed"
+                                      ? undefined
+                                      : "Bayar"
+                            }
                         />
                     );
                 })}

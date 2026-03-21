@@ -8,6 +8,9 @@ export default function MarketingLayout({
         <main>
             <NavBar />
             {children}
+            <div className="text-center text-sm text-muted-foreground mt-4 px-4 py-4 bg-background mx-auto">
+                © 2026 Emerald Kos. All rights reserved.
+            </div>
         </main>
     );
 }

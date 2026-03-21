@@ -20,6 +20,7 @@ import {
     WindIcon,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 function page() {
     return (
@@ -36,13 +37,15 @@ function page() {
                         <h2 className="text-2xl font-semibold">Rp 1.500.000</h2>
                         <p className="text-muted-foreground">/ bulan</p>
                     </div>
-                    <Button
-                        variant="outline"
-                        className="rounded-full h-12 w-fit px-6 font-semibold"
-                    >
-                        Cek Ketersediaan
-                        <CalendarIcon />
-                    </Button>
+                    <Link href="/rooms">
+                        <Button
+                            variant="outline"
+                            className="rounded-full h-12 w-fit px-6 font-semibold"
+                        >
+                            Cek Ketersediaan
+                            <CalendarIcon />
+                        </Button>
+                    </Link>
                     <div className="flex flex-wrap gap-6">
                         <div className="flex items-center gap-2">
                             <UsersRoundIcon />

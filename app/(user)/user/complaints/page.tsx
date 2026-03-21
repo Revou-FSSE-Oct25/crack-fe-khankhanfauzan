@@ -3,20 +3,7 @@ import React from "react";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { Card, CardContent } from "@/components/ui/card";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { IconSurface } from "@/components/ui/icon-surface";
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput,
-} from "@/components/ui/input-group";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import {
     Pagination,
     PaginationContent,
@@ -30,11 +17,11 @@ import { ComplaintRow } from "@/components/complaints/ComplaintRow";
 import {
     CircleCheckBigIcon,
     ClockIcon,
-    SearchIcon,
     TriangleAlertIcon,
     WrenchIcon,
 } from "lucide-react";
 import { MOCK_COMPLAINTS, ComplaintStatus } from "@/mocks/complaints";
+import { FilterBar } from "@/components/filters/FilterBar";
 
 function Page() {
     const [search, setSearch] = React.useState("");
@@ -184,45 +171,36 @@ function Page() {
                     </CardContent>
                 </Card>
             </div>
-            <div className="flex gap-4">
-                <InputGroup className="bg-card">
-                    <InputGroupInput
-                        placeholder="Cari komplain..."
-                        value={search}
-                        onChange={(e) => {
-                            setSearch(e.target.value);
-                            setPage(1);
-                        }}
-                    />
-                    <InputGroupAddon>
-                        <SearchIcon color="oklch(70.7% 0.022 261.325)" />
-                    </InputGroupAddon>
-                </InputGroup>
-
-                <DateRangePicker value={date} onChange={setDate} />
-                <Select
-                    value={status}
-                    onValueChange={(v) => {
+            <FilterBar
+                search={{
+                    value: search,
+                    onChange: (v) => {
+                        setSearch(v);
+                        setPage(1);
+                    },
+                    placeholder: "Cari komplain...",
+                    iconColor: "oklch(70.7% 0.022 261.325)",
+                }}
+                dateRange={{
+                    value: date,
+                    onChange: setDate,
+                }}
+                select={{
+                    value: status,
+                    onChange: (v) => {
                         setStatus(v as ComplaintStatus | "semua");
                         setPage(1);
-                    }}
-                >
-                    <SelectTrigger className="bg-card">
-                        <SelectValue placeholder="Pilih Status">
-                            {status === "semua" ? "Semua" : status}
-                        </SelectValue>
-                        <SelectContent>
-                            <SelectItem value="semua">Semua</SelectItem>
-                            <SelectItem value="open">Open</SelectItem>
-                            <SelectItem value="in_progress">
-                                Progress
-                            </SelectItem>
-                            <SelectItem value="resolved">Selesai</SelectItem>
-                            <SelectItem value="rejected">Ditolak</SelectItem>
-                        </SelectContent>
-                    </SelectTrigger>
-                </Select>
-            </div>
+                    },
+                    placeholder: "Pilih Status",
+                    options: [
+                        { value: "semua", label: "Semua" },
+                        { value: "open", label: "Open" },
+                        { value: "in_progress", label: "Progress" },
+                        { value: "resolved", label: "Selesai" },
+                        { value: "rejected", label: "Ditolak" },
+                    ],
+                }}
+            />
             <div className="flex flex-col gap-4">
                 {pageItems.map((c) => (
                     <ComplaintRow

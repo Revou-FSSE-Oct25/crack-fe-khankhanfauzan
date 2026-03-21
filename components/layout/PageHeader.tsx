@@ -50,7 +50,7 @@ function PageHeader({
 
     return (
         <div className={cn("bg-card sticky top-0 z-50", className)}>
-            <div className="max-w-7xl mx-auto px-4 py-2 flex justify-between gap-3 sm:gap-0">
+            <div className="mx-auto px-4 py-2 flex justify-between gap-3 sm:gap-0">
                 <div className="flex gap-3 items-start sm:items-center">
                     <SidebarTrigger />
                     <Breadcrumb>

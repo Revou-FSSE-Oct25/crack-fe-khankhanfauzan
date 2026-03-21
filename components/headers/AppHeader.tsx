@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 function AppHeader() {
     return (
-        <div className="flex justify-between py-2 px-4 border-b">
+        <div className="flex justify-between py-2 px-4 border-b bg-sidebar">
             <div className="flex flex-col">
                 <h1 className="text-xl font-bold">Hello, John Doe!</h1>
                 <p className="text-sm font-medium text-muted-foreground">

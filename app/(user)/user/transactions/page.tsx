@@ -1,29 +1,15 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput,
-} from "@/components/ui/input-group";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { addDays, format } from "date-fns";
 import {
     CircleCheckBigIcon,
     ClockIcon,
     CreditCardIcon,
     ReceiptIcon,
-    SearchIcon,
 } from "lucide-react";
 import React from "react";
 import { DateRange } from "react-day-picker";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { IconSurface } from "@/components/ui/icon-surface";
 import { TransactionRow } from "@/components/transactions/TransactionRow";
 import {
@@ -36,6 +22,7 @@ import {
     PaginationPrevious,
 } from "@/components/ui/pagination";
 import { MOCK_TRANSACTIONS, TxStatus } from "@/mocks/transactions";
+import { FilterBar } from "@/components/filters/FilterBar";
 
 function Page() {
     const [date, setDate] = React.useState<DateRange | undefined>({
@@ -147,45 +134,35 @@ function Page() {
                     </CardContent>
                 </Card>
             </div>
-            <div className="flex gap-4">
-                <InputGroup className="bg-card">
-                    <InputGroupInput
-                        placeholder="Cari transaksi..."
-                        value={search}
-                        onChange={(e) => {
-                            setSearch(e.target.value);
-                            setPage(1);
-                        }}
-                    />
-                    <InputGroupAddon>
-                        <SearchIcon />
-                    </InputGroupAddon>
-                </InputGroup>
-
-                <DateRangePicker value={date} onChange={setDate} />
-                <Select
-                    value={status}
-                    onValueChange={(v) => {
+            <FilterBar
+                search={{
+                    value: search,
+                    onChange: (v) => {
+                        setSearch(v);
+                        setPage(1);
+                    },
+                    placeholder: "Cari transaksi...",
+                }}
+                dateRange={{
+                    value: date,
+                    onChange: setDate,
+                }}
+                select={{
+                    value: status,
+                    onChange: (v) => {
                         setStatus(v as TxStatus | "semua");
                         setPage(1);
-                    }}
-                >
-                    <SelectTrigger className="bg-card">
-                        <SelectValue placeholder="Pilih Status">
-                            {status === "semua" ? "Semua" : status}
-                        </SelectValue>
-                        <SelectContent>
-                            <SelectItem value="semua">Semua</SelectItem>
-                            <SelectItem value="dibayar">Dibayar</SelectItem>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="terlambat">Terlambat</SelectItem>
-                            <SelectItem value="dibatalkan">
-                                Dibatalkan
-                            </SelectItem>
-                        </SelectContent>
-                    </SelectTrigger>
-                </Select>
-            </div>
+                    },
+                    placeholder: "Pilih Status",
+                    options: [
+                        { value: "semua", label: "Semua" },
+                        { value: "dibayar", label: "Dibayar" },
+                        { value: "pending", label: "Pending" },
+                        { value: "terlambat", label: "Terlambat" },
+                        { value: "dibatalkan", label: "Dibatalkan" },
+                    ],
+                }}
+            />
             <div className="flex flex-col gap-4">
                 {pageItems.map((tx) => (
                     <TransactionRow
