@@ -9,18 +9,23 @@ import {
     WindIcon,
     InfoIcon,
     CalendarIcon,
+    StarIcon,
+    Columns2Icon,
+    LampDeskIcon,
+    ChefHatIcon,
+    ZapIcon,
 } from "lucide-react";
 import type { Room, RoomStatus } from "./RoomTile";
 
 function statusLabel(status: RoomStatus) {
-    if (status === "tersedia") return "Tersedia";
-    if (status === "pending") return "Booking Pending";
+    if (status === "available") return "Tersedia";
+    if (status === "unavailable") return "Tidak Tersedia";
     return "Terisi";
 }
 
 function statusClass(status: RoomStatus) {
-    if (status === "tersedia") return "text-green-600";
-    if (status === "pending") return "text-amber-600";
+    if (status === "available") return "text-green-600";
+    if (status === "unavailable") return "text-amber-600";
     return "text-red-600";
 }
 
@@ -41,7 +46,21 @@ function mapFacilities(items: string[]) {
             label.toLowerCase().includes("wi-fi")
         )
             return { icon: WifiIcon, label: "Wi-Fi" };
-        return { icon: BathIcon, label };
+        if (label.toLowerCase().includes("kamar mandi"))
+            return { icon: BathIcon, label };
+        if (label.toLowerCase().includes("lemari"))
+            return { icon: Columns2Icon, label };
+        if (label.toLowerCase().includes("meja"))
+            return { icon: LampDeskIcon, label };
+        if (
+            label.toLowerCase().includes("kitchen") ||
+            label.toLowerCase().includes("sink")
+        )
+            return { icon: ChefHatIcon, label };
+
+        if (label.toLowerCase().includes("listrik"))
+            return { icon: ZapIcon, label };
+        return { icon: StarIcon, label };
     });
 }
 
@@ -57,7 +76,7 @@ function RoomDetailsCard({
     className?: string;
 }) {
     const router = useRouter();
-    const disabled = !room || room.status !== "tersedia";
+    const disabled = !room || room.status !== "available";
 
     return (
         <Card className={cn("sticky top-4 shadow-none", className)}>

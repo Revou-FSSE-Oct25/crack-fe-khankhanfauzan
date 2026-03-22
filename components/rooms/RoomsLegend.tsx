@@ -26,7 +26,7 @@ function RoomsLegend({ className }: { className?: string }) {
             <LegendItem colorClass="bg-red-400 border-red-700" label="Terisi" />
             <LegendItem
                 colorClass="bg-amber-400 border-amber-700"
-                label="Booking Pending"
+                label="Tidak Tersedia"
             />
         </div>
     );

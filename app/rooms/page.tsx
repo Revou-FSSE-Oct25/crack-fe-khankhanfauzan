@@ -1,189 +1,65 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RoomsLegend } from "@/components/rooms/RoomsLegend";
 import { RoomDetailsCard } from "@/components/rooms/RoomDetailsCard";
-import { RoomTile, type Room } from "@/components/rooms/RoomTile";
+import {
+    RoomTile,
+    type Room as UiRoom,
+    type RoomStatus as UiRoomStatus,
+} from "@/components/rooms/RoomTile";
 import { ArrowLeftIcon, InfoIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
+import { fetchRooms } from "@/services/rooms";
+import type { RoomsResponse, Room as ApiRoom } from "@/types/rooms";
 
 function RoomsPage() {
-    const [selected, setSelected] = useState<Room | undefined>(undefined);
+    const [selected, setSelected] = useState<UiRoom | undefined>(undefined);
     const isGuest = false;
 
     const router = useRouter();
 
-    const rooms: Room[] = useMemo(
-        () => [
-            {
-                id: "101",
-                floor: 1,
-                price: 1300000,
-                size: 12,
-                status: "terisi",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "102",
-                floor: 1,
-                price: 1300000,
-                size: 12,
-                status: "tersedia",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "103",
-                floor: 1,
-                price: 1300000,
-                size: 12,
-                status: "terisi",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "104",
-                floor: 1,
-                price: 1300000,
-                size: 12,
-                status: "pending",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "105",
-                floor: 1,
-                price: 1300000,
-                size: 12,
-                status: "terisi",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "106",
-                floor: 1,
-                price: 1300000,
-                size: 12,
-                status: "tersedia",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "201",
-                floor: 2,
-                price: 1300000,
-                size: 12,
-                status: "tersedia",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "202",
-                floor: 2,
-                price: 1300000,
-                size: 12,
-                status: "tersedia",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "203",
-                floor: 2,
-                price: 1300000,
-                size: 12,
-                status: "terisi",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "204",
-                floor: 2,
-                price: 1300000,
-                size: 12,
-                status: "tersedia",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "205",
-                floor: 2,
-                price: 1300000,
-                size: 12,
-                status: "terisi",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "206",
-                floor: 2,
-                price: 1300000,
-                size: 12,
-                status: "tersedia",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "301",
-                floor: 3,
-                price: 1300000,
-                size: 12,
-                status: "tersedia",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "302",
-                floor: 3,
-                price: 1300000,
-                size: 12,
-                status: "terisi",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "303",
-                floor: 3,
-                price: 1300000,
-                size: 12,
-                status: "pending",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "304",
-                floor: 3,
-                price: 1300000,
-                size: 12,
-                status: "tersedia",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "305",
-                floor: 3,
-                price: 1300000,
-                size: 12,
-                status: "tersedia",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-            {
-                id: "306",
-                floor: 3,
-                price: 1300000,
-                size: 12,
-                status: "terisi",
-                facilities: ["AC", "Wi-Fi", "Kamar Mandi Luar"],
-            },
-        ],
-        [],
-    );
+    const [roomsResponse, setRoomsResponse] = useState<RoomsResponse>();
 
-    const counts = useMemo(() => {
-        const available = rooms.filter((r) => r.status === "tersedia").length;
-        const occupied = rooms.filter((r) => r.status === "terisi").length;
-        const pending = rooms.filter((r) => r.status === "pending").length;
-        return { available, occupied, pending };
-    }, [rooms]);
+    useEffect(() => {
+        fetchRooms()
+            .then(setRoomsResponse)
+            .catch((e) => {
+                console.log(e);
+            });
+    }, []);
+
+    const uiRooms: UiRoom[] = useMemo(() => {
+        const data = roomsResponse?.data ?? [];
+        const statusMap: Record<string, UiRoomStatus> = {
+            available: "available",
+            occupied: "occupied",
+            unavailable: "unavailable",
+        };
+        return data.map((r: ApiRoom) => ({
+            id: r.roomNumber,
+            floor: r.floor,
+            price: r.price,
+            size: 12,
+            status: statusMap[r.status] ?? "unavailable",
+            facilities: r.facilities,
+        }));
+    }, [roomsResponse]);
 
     const floors = useMemo(() => {
-        const groups: Record<number, Room[]> = {};
-        rooms.forEach((r) => {
+        const groups: Record<number, UiRoom[]> = {};
+        uiRooms.forEach((r) => {
             groups[r.floor] ??= [];
             groups[r.floor].push(r);
         });
         return Object.entries(groups)
             .sort((a, b) => Number(a[0]) - Number(b[0]))
             .map(([floor, items]) => ({ floor: Number(floor), items }));
-    }, [rooms]);
+    }, [uiRooms]);
 
     return (
         <div className="px-4 py-4 max-w-7xl mx-auto">
@@ -196,7 +72,7 @@ function RoomsPage() {
                 </h1>
                 <div className="ml-auto">
                     <Badge className="bg-emerald-50 text-emerald-900">
-                        {counts.available} kamar tersedia
+                        {roomsResponse?.meta.totalAvailable} kamar tersedia
                     </Badge>
                 </div>
             </div>
@@ -207,7 +83,7 @@ function RoomsPage() {
                         <Card className="shadow-none">
                             <CardContent className="flex flex-col text-center">
                                 <p className="text-2xl font-bold text-green-500">
-                                    11
+                                    {roomsResponse?.meta.totalAvailable ?? 0}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
                                     Tersedia
@@ -217,7 +93,7 @@ function RoomsPage() {
                         <Card className="shadow-none">
                             <CardContent className="flex flex-col text-center">
                                 <p className="text-2xl font-bold text-red-500">
-                                    6
+                                    {roomsResponse?.meta.totalOccupied ?? 0}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
                                     Terisi
@@ -227,10 +103,10 @@ function RoomsPage() {
                         <Card className="shadow-none">
                             <CardContent className="flex flex-col text-center">
                                 <p className="text-2xl font-bold text-amber-500">
-                                    1
+                                    {roomsResponse?.meta.totalUnavailable ?? 0}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
-                                    Pending
+                                    Tidak Tersedia
                                 </p>
                             </CardContent>
                         </Card>

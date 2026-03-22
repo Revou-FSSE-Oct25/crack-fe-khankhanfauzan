@@ -34,7 +34,7 @@ function page() {
                         </p>
                     </div>
                     <div className="flex items-baseline gap-2">
-                        <h2 className="text-2xl font-semibold">Rp 1.500.000</h2>
+                        <h2 className="text-2xl font-semibold">Rp 1.000.000</h2>
                         <p className="text-muted-foreground">/ bulan</p>
                     </div>
                     <Link href="/rooms">

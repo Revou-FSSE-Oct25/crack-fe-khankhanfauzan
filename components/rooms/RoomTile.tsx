@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
-type RoomStatus = "tersedia" | "terisi" | "pending";
+type RoomStatus = "available" | "occupied" | "unavailable";
 
 type Room = {
     id: string;
@@ -25,10 +25,10 @@ type Room = {
 };
 
 function statusClasses(status: RoomStatus) {
-    if (status === "tersedia") {
+    if (status === "available") {
         return "bg-green-500  text-white border-3 border-green-600  transition duration-200";
     }
-    if (status === "pending") {
+    if (status === "unavailable") {
         return "bg-amber-400 text-white border-3 border-amber-600";
     }
     return "bg-red-400 text-white border-3 border-red-600";
@@ -43,13 +43,13 @@ function RoomTile({
     selected?: boolean;
     onSelect?: (room: Room) => void;
 }) {
-    const disabled = room.status !== "tersedia";
+    const disabled = room.status !== "available";
     const content = (
         <div
             className={cn(
                 "transition duration-200 rounded-md aspect-square relative",
                 selected ? "ring-4 ring-green-500" : "",
-                room.status === "tersedia"
+                room.status === "available"
                     ? "hover:scale-105 hover:bg-green-600"
                     : "",
             )}
@@ -94,7 +94,7 @@ function RoomTile({
                 <TooltipContent sideOffset={8}>
                     <div className="space-y-1">
                         <p className="font-semibold">Kamar {room.id}</p>
-                        <p>Status: Tersedia</p>
+                        <p>Status: available</p>
                         <p>Harga: {formatIDR(room.price)}/bulan</p>
                         <p>Ukuran: {room.size}m²</p>
                     </div>

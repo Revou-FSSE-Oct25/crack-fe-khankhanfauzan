@@ -1,4 +1,5 @@
 import { http } from "@/lib/http/client"
+import { RoomsResponse } from "@/types/rooms"
 
 export type RoomStatus = "available" | "occupied" | "maintenance"
 
@@ -18,7 +19,7 @@ export type CreateRoomPayload = {
 export type UpdateRoomPayload = Partial<CreateRoomPayload>
 
 export async function fetchRooms(params?: { status?: RoomStatus }) {
-  return http.get<Room[]>("/rooms", { query: params })
+  return http.get<RoomsResponse>("/rooms", { query: params })
 }
 
 export async function fetchRoomById(id: string) {
