@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -12,12 +12,42 @@ import {
     PaginationPrevious,
 } from "@/components/ui/pagination";
 import { FilterBar } from "@/components/filters/FilterBar";
-import type { DateRange } from "react-day-picker";
+import { Room } from "@/types/rooms";
+import { fetchRooms } from "@/services/rooms";
+import { cn } from "@/lib/utils";
+import { InfoIcon } from "lucide-react";
+import { getSession } from "@/actions/auth";
 
 export default function Page() {
-    const [query, setQuery] = React.useState("");
-    const [status, setStatus] = React.useState("semua");
-    const [date, setDate] = React.useState<DateRange | undefined>();
+    const [query, setQuery] = useState("");
+    const [status, setStatus] = useState("semua");
+    const [rooms, setRooms] = useState<Room[]>([]);
+    const [errorMsg, setErrorMsg] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const session = getSession();
+        const token = session?.accessToken;
+
+        fetchRooms(undefined, { token })
+            .then((value) => {
+                console.log(value);
+                return setRooms(value.data);
+            })
+            .catch((e) => setErrorMsg(e.message))
+            .finally(() => setLoading(false));
+    }, []);
+
+    const statusLabelColor = (room: Room) => {
+        if (room.status === "available") {
+            return "bg-emerald-100 text-emerald-700";
+        } else if (room.status === "occupied") {
+            return "bg-amber-100 text-amber-700";
+        } else {
+            return "bg-red-100 text-red-700";
+        }
+    };
+
     return (
         <div className="bg-muted h-full">
             <div className="flex h-full flex-col gap-4 md:gap-6 p-4 md:p-6">
@@ -27,9 +57,6 @@ export default function Page() {
                         <Link href="/admin/rooms/create">
                             <Button size="sm">Tambah Kamar</Button>
                         </Link>
-                        <Button size="sm" variant="outline">
-                            Atur Tipe Kamar
-                        </Button>
                     </div>
                 </div>
 
@@ -86,87 +113,41 @@ export default function Page() {
                                     </tr>
                                 </thead>
                                 <tbody className="[&>tr:last-child]:border-0">
-                                    <tr className="border-b">
-                                        <td className="px-4 py-3">K-01</td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            Standard
-                                        </td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            Rp 1.000.000
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className="text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-700">
-                                                Terisi
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <Link href="/admin/rooms/K-01">
-                                                <Button
-                                                    size="xs"
-                                                    variant="ghost"
+                                    {rooms.map((room) => (
+                                        <tr className="border-b" key={room.id}>
+                                            <td className="px-4 py-3">
+                                                {room.roomNumber}
+                                            </td>
+                                            <td className="px-4 py-3 text-muted-foreground">
+                                                {room.roomType}
+                                            </td>
+                                            <td className="px-4 py-3 text-muted-foreground">
+                                                Rp{room.price}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span
+                                                    className={cn(
+                                                        "text-xs px-2 py-0.5 rounded",
+                                                        statusLabelColor(room),
+                                                    )}
                                                 >
-                                                    Detail
-                                                </Button>
-                                            </Link>
-                                            <Button size="xs" variant="ghost">
-                                                Atur
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                    <tr className="border-b">
-                                        <td className="px-4 py-3">K-12</td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            Deluxe
-                                        </td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            Rp 1.300.000
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-700">
-                                                Kosong
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <Link href="/admin/rooms/K-12">
-                                                <Button
-                                                    size="xs"
-                                                    variant="ghost"
+                                                    {room.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <Link
+                                                    href={`/admin/rooms/${room.id}`}
                                                 >
-                                                    Detail
-                                                </Button>
-                                            </Link>
-                                            <Button size="xs" variant="ghost">
-                                                Atur
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                    <tr className="border-b">
-                                        <td className="px-4 py-3">K-21</td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            Standard
-                                        </td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            Rp 1.000.000
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-700">
-                                                Maintenance
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <Link href="/admin/rooms/K-21">
-                                                <Button
-                                                    size="xs"
-                                                    variant="ghost"
-                                                >
-                                                    Detail
-                                                </Button>
-                                            </Link>
-                                            <Button size="xs" variant="ghost">
-                                                Atur
-                                            </Button>
-                                        </td>
-                                    </tr>
+                                                    <Button
+                                                        size="icon-sm"
+                                                        variant="outline"
+                                                    >
+                                                        <InfoIcon />
+                                                    </Button>
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         </div>

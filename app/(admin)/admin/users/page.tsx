@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,9 +18,11 @@ import {
 import { InfoIcon } from "lucide-react";
 import Link from "next/link";
 import { FilterBar } from "@/components/filters/FilterBar";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { getSession } from "@/actions/auth";
 
 export default function Page() {
-    const [users, setUsers] = React.useState<
+    const [users, setUsers] = useState<
         {
             id: string;
             name: string;
@@ -30,42 +31,48 @@ export default function Page() {
             joinedAt?: string | null;
         }[]
     >([]);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState<string | null>(null);
-    const [query, setQuery] = React.useState("");
-    const [statusFilter, setStatusFilter] = React.useState<
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [query, setQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<
         "semua" | "active" | "inactive"
     >("semua");
-    const [date, setDate] = React.useState<DateRange | undefined>();
-    const [page, setPage] = React.useState(1);
-    const [limit] = React.useState(20);
-    const [meta, setMeta] = React.useState<UsersResponseMeta | null>(null);
+    const [date, setDate] = useState<DateRange | undefined>();
+    const [page, setPage] = useState(1);
+    const [limit] = useState(20);
+    const [meta, setMeta] = useState<UsersResponseMeta | null>(null);
 
-    React.useEffect(() => {
+    useEffect(() => {
         let aborted = false;
         async function load() {
             setLoading(true);
             setError(null);
             try {
-                const resp = await fetchUsers({
-                    page,
-                    limit,
-                    q: query || undefined,
-                });
+                const session = getSession();
+                const token = session?.accessToken;
+
+                const resp = await fetchUsers(
+                    {
+                        page,
+                        limit,
+                        q: query || undefined,
+                    },
+                    { token },
+                );
                 if (!aborted) {
                     setMeta((resp as UsersResponse)?.meta ?? null);
                     setUsers(
                         ((resp as UsersResponse)?.data || []).map(
                             (u: User) => ({
-                                id: u.user_id,
-                                name: u.full_name,
+                                id: u.id,
+                                name: u.fullName,
                                 email: u.email,
                                 status:
-                                    u.current_stay &&
-                                    u.current_stay.status === "active"
+                                    u.currentStay &&
+                                    u.currentStay.status === "active"
                                         ? "active"
                                         : "inactive",
-                                joinedAt: u.profile?.joined_at ?? null,
+                                joinedAt: u.profile?.joinedAt ?? null,
                             }),
                         ),
                     );
@@ -86,7 +93,7 @@ export default function Page() {
         };
     }, [page, limit, query]);
 
-    const filtered = React.useMemo(() => {
+    const filtered = useMemo(() => {
         let arr = users;
         if (statusFilter !== "semua") {
             arr = arr.filter((u) => u.status === statusFilter);
@@ -296,7 +303,7 @@ export default function Page() {
                                     const prev = arr[idx - 1];
                                     const needEllipsis = prev && p - prev > 1;
                                     return (
-                                        <React.Fragment key={p}>
+                                        <Fragment key={p}>
                                             {needEllipsis && (
                                                 <PaginationItem>
                                                     <PaginationEllipsis />
@@ -314,7 +321,7 @@ export default function Page() {
                                                     {p}
                                                 </PaginationLink>
                                             </PaginationItem>
-                                        </React.Fragment>
+                                        </Fragment>
                                     );
                                 })}
                                 <PaginationItem>

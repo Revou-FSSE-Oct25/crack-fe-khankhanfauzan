@@ -1,108 +1,132 @@
 "use client";
 
-import React from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { fetchUserById, updateUser } from "@/services/users";
 import type { User } from "@/types/users";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import {
+    Field,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+} from "@/components/ui/field";
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+} from "@/components/ui/input-group";
+import {
+    BookOpenCheckIcon,
+    IdCardIcon,
+    MailIcon,
+    PhoneIcon,
+    UserIcon,
+} from "lucide-react";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { getSession } from "@/actions/auth";
+
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+
+type FormValues = {
+    fullname: string;
+    email: string;
+    whatsappNumber?: string;
+    marital_status: "single" | "married";
+    address?: string;
+    ktp?: string;
+    marriage?: string;
+};
 
 export default function Page() {
     const params = useParams();
     const id = String(params?.id ?? "");
 
-    const [detail, setDetail] = React.useState<User | null>(null);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState<string | null>(null);
-    const [edit, setEdit] = React.useState(false);
-    const [saving, setSaving] = React.useState(false);
-    const [form, setForm] = React.useState({
-        full_name: "",
-        email: "",
-        whatsapp_no: "",
-        role: "",
-        marital_status: "",
-        bio: "",
-    });
+    const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [detail, setDetail] = useState<User | null>(null);
 
-    React.useEffect(() => {
-        let aborted = false;
+    const {
+        register,
+        handleSubmit,
+        control,
+        reset,
+        formState: { errors, isSubmitting },
+    } = useForm<FormValues>({
+        defaultValues: {
+            fullname: "",
+            email: "",
+            whatsappNumber: "",
+            marital_status: "single",
+            address: "",
+            ktp: "",
+            marriage: "",
+        },
+    });
+    const marital = useWatch({ control, name: "marital_status" });
+
+    useEffect(() => {
+        let mounted = true;
         async function load() {
-            if (!id) return;
             setLoading(true);
-            setError(null);
+            setErrorMsg(null);
             try {
-                const d = await fetchUserById(id);
-                if (!aborted) {
-                    setDetail(d as User);
-                    setForm({
-                        full_name: d.full_name,
-                        email: d.email,
-                        whatsapp_no: d.whatsapp_no ?? "",
-                        role: d.role ?? "",
-                        marital_status: d.marital_status ?? "",
-                        bio: d.profile?.bio ?? "",
-                    });
+                const session = getSession();
+                const token = session?.accessToken;
+
+                const res = await fetchUserById(id, { token });
+                let data: User;
+                const maybe = res as unknown;
+                if (
+                    maybe &&
+                    typeof maybe === "object" &&
+                    "data" in (maybe as Record<string, unknown>)
+                ) {
+                    const wrapped = (maybe as { data: unknown }).data;
+                    data = wrapped as User;
+                } else {
+                    data = maybe as User;
                 }
-            } catch {
-                if (!aborted) setError("Gagal memuat detail pengguna");
+                if (!mounted) return;
+                setDetail(data);
+                reset({
+                    fullname: data?.fullName ?? "",
+                    email: data?.email ?? "",
+                    whatsappNumber: data?.whatsappNumber ?? "",
+                    marital_status:
+                        (data?.maritalStatus as "single" | "married") ??
+                        "single",
+                    address: "",
+                    ktp: "",
+                    marriage: "",
+                });
+            } catch (e: unknown) {
+                if (!mounted) return;
+                const msg =
+                    e instanceof Error
+                        ? e.message
+                        : "Gagal memuat data pengguna";
+                setErrorMsg(msg);
             } finally {
-                if (!aborted) setLoading(false);
+                if (mounted) setLoading(false);
             }
         }
         load();
         return () => {
-            aborted = true;
+            mounted = false;
         };
-    }, [id]);
-
-    function initials(name: string) {
-        const parts = name.trim().split(" ").filter(Boolean);
-        if (parts.length === 0) return "?";
-        const first = parts[0]?.[0] ?? "";
-        const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "";
-        return (first + last).toUpperCase();
-    }
-
-    async function onSave() {
-        if (!detail) return;
-        setSaving(true);
-        const payload = {
-            full_name: form.full_name,
-            email: form.email,
-            whatsapp_no: form.whatsapp_no || undefined,
-            role: form.role || undefined,
-            marital_status: form.marital_status || undefined,
-            profile: {
-                bio: form.bio || "",
-            },
-        };
-        try {
-            const updated = await updateUser(detail.user_id, payload);
-            setDetail(updated as User);
-            setEdit(false);
-        } catch {}
-        setSaving(false);
-    }
-
-    function onCancel() {
-        if (!detail) return;
-        setForm({
-            full_name: detail.full_name,
-            email: detail.email,
-            whatsapp_no: detail.whatsapp_no ?? "",
-            role: detail.role ?? "",
-            marital_status: detail.marital_status ?? "",
-            bio: detail.profile?.bio ?? "",
-        });
-        setEdit(false);
-    }
+    }, [id, reset]);
 
     return (
         <div className="bg-muted h-full">
@@ -113,16 +137,22 @@ export default function Page() {
                         <Link href="/admin/users">
                             <Button variant="outline">Kembali</Button>
                         </Link>
-                        {!edit ? (
-                            <Button onClick={() => setEdit(true)} disabled={loading || !!error}>
+                        {!isEditing ? (
+                            <Button
+                                onClick={() => setIsEditing(true)}
+                                disabled={loading || !!errorMsg}
+                            >
                                 Edit
                             </Button>
                         ) : (
                             <>
-                                <Button variant="outline" onClick={onCancel} disabled={saving}>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsEditing(false)}
+                                >
                                     Batal
                                 </Button>
-                                <Button onClick={onSave} disabled={saving}>
+                                <Button onClick={handleSubmit(() => {})}>
                                     Simpan
                                 </Button>
                             </>
@@ -144,93 +174,201 @@ export default function Page() {
                                 </div>
                             </div>
                         )}
-                        {!loading && error && <div className="text-sm">{error}</div>}
-                        {!loading && !error && detail && (
+                        {!loading && errorMsg && (
+                            <div className="text-sm">{errorMsg}</div>
+                        )}
+                        {!loading && !errorMsg && detail && (
                             <div className="flex flex-col gap-6">
                                 <div className="flex items-center gap-3">
                                     <Avatar size="lg">
-                                        <AvatarImage src={detail.profile?.avatar_url ?? undefined} alt={detail.full_name} />
-                                        <AvatarFallback>{initials(detail.full_name)}</AvatarFallback>
+                                        <AvatarImage
+                                            src={
+                                                detail.profile?.avatarUrl ??
+                                                undefined
+                                            }
+                                            alt={detail.fullName}
+                                        />
+                                        <AvatarFallback>U</AvatarFallback>
                                     </Avatar>
                                     <div>
-                                        <div className="font-semibold">{detail.full_name}</div>
-                                        <div className="text-muted-foreground text-sm">{detail.email}</div>
+                                        <div className="font-semibold">
+                                            {detail.fullName}
+                                        </div>
+                                        <div className="text-muted-foreground text-sm">
+                                            {detail.email}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 gap-4">
-                                    <div className="flex flex-col gap-2">
-                                        <Label htmlFor="user_id">User ID</Label>
-                                        <Input id="user_id" value={detail.user_id} disabled />
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <Label htmlFor="full_name">Nama Lengkap</Label>
-                                        <Input
-                                            id="full_name"
-                                            value={form.full_name}
-                                            onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
-                                            disabled={!edit}
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <Label htmlFor="email">Email</Label>
-                                        <Input
-                                            id="email"
-                                            type="email"
-                                            value={form.email}
-                                            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                                            disabled={!edit}
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <Label htmlFor="whatsapp_no">No. WhatsApp</Label>
-                                        <Input
-                                            id="whatsapp_no"
-                                            value={form.whatsapp_no}
-                                            onChange={(e) => setForm((f) => ({ ...f, whatsapp_no: e.target.value }))}
-                                            disabled={!edit}
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <Label htmlFor="role">Role</Label>
-                                        <Input
-                                            id="role"
-                                            value={form.role}
-                                            onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-                                            disabled={!edit}
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <Label htmlFor="marital_status">Status Pernikahan</Label>
-                                        <Input
-                                            id="marital_status"
-                                            value={form.marital_status}
-                                            onChange={(e) => setForm((f) => ({ ...f, marital_status: e.target.value }))}
-                                            disabled={!edit}
-                                        />
-                                    </div>
-                                    {/* <div className="flex flex-col gap-2">
-                                        <Label htmlFor="bio">Bio</Label>
-                                        <Textarea
-                                            id="bio"
-                                            value={form.bio}
-                                            onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
-                                            disabled={!edit}
-                                        />
-                                    </div> */}
-                                    {/* <div className="flex flex-col gap-2">
-                                        <Label htmlFor="joined_at">Bergabung Pada</Label>
-                                        <Input
-                                            id="joined_at"
-                                            value={detail.profile?.joined_at ? new Date(detail.profile.joined_at).toLocaleString() : ""}
-                                            disabled
-                                        />
-                                    </div> */}
+                                    <FieldGroup className="grid grid-cols-1 md:grid-cols-2">
+                                        <Field>
+                                            <FieldLabel htmlFor="fullname">
+                                                Nama Lengkap{" "}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <InputGroup>
+                                                <InputGroupInput
+                                                    id="fullname"
+                                                    type="text"
+                                                    disabled={!isEditing}
+                                                    {...register("fullname", {
+                                                        required:
+                                                            "Nama Lengkap wajib diisi",
+                                                    })}
+                                                />
+                                                <InputGroupAddon>
+                                                    <UserIcon />
+                                                </InputGroupAddon>
+                                            </InputGroup>
+                                            <FieldError>
+                                                {errors.fullname?.message?.toString()}
+                                            </FieldError>
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel htmlFor="email">
+                                                Email{" "}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <InputGroup>
+                                                <InputGroupInput
+                                                    id="email"
+                                                    type="email"
+                                                    disabled={!isEditing}
+                                                    {...register("email", {
+                                                        required:
+                                                            "Email wajib diisi",
+                                                    })}
+                                                />
+                                                <InputGroupAddon>
+                                                    <MailIcon />
+                                                </InputGroupAddon>
+                                            </InputGroup>
+                                            <FieldError>
+                                                {errors.email?.message?.toString()}
+                                            </FieldError>
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel htmlFor="whatsappnumber">
+                                                Nomor Whatsapp{" "}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <InputGroup>
+                                                <InputGroupInput
+                                                    id="whatsappnumber"
+                                                    type="tel"
+                                                    disabled={!isEditing}
+                                                    {...register(
+                                                        "whatsappNumber",
+                                                        {
+                                                            required:
+                                                                "Nomor Whatsapp wajib diisi",
+                                                        },
+                                                    )}
+                                                />
+                                                <InputGroupAddon>
+                                                    <PhoneIcon />
+                                                </InputGroupAddon>
+                                            </InputGroup>
+                                            <FieldError>
+                                                {errors.whatsappNumber?.message?.toString()}
+                                            </FieldError>
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel htmlFor="maritalstatus">
+                                                Status Kawin{" "}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <Controller
+                                                control={control}
+                                                name="marital_status"
+                                                render={({ field }) => (
+                                                    <Select
+                                                        value={field.value}
+                                                        onValueChange={
+                                                            field.onChange
+                                                        }
+                                                    >
+                                                        <SelectTrigger
+                                                            disabled={
+                                                                !isEditing
+                                                            }
+                                                        >
+                                                            <SelectValue placeholder="Select Marital Status" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="married">
+                                                                Married
+                                                            </SelectItem>
+                                                            <SelectItem value="single">
+                                                                Single
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                )}
+                                            />
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel htmlFor="ktp">
+                                                KTP
+                                            </FieldLabel>
+                                            <InputGroup>
+                                                <InputGroupInput
+                                                    id="ktp"
+                                                    type="text"
+                                                    disabled={!isEditing}
+                                                    {...register("ktp")}
+                                                />
+                                                <InputGroupAddon>
+                                                    <IdCardIcon />
+                                                </InputGroupAddon>
+                                            </InputGroup>
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel htmlFor="marriage">
+                                                Buku Nikah{" "}
+                                                {marital === "married" ? (
+                                                    <span className="text-destructive">
+                                                        *
+                                                    </span>
+                                                ) : null}
+                                            </FieldLabel>
+                                            <InputGroup>
+                                                <InputGroupInput
+                                                    id="marriage"
+                                                    type="text"
+                                                    disabled={!isEditing}
+                                                    {...register("marriage")}
+                                                />
+                                                <InputGroupAddon>
+                                                    <BookOpenCheckIcon />
+                                                </InputGroupAddon>
+                                            </InputGroup>
+                                        </Field>
+                                    </FieldGroup>
+
                                     <div className="flex flex-col gap-1">
-                                        <div className="text-sm font-medium">Dokumen</div>
+                                        <div className="text-sm font-medium">
+                                            Dokumen
+                                        </div>
                                         <div className="text-sm">
                                             KTP:{" "}
-                                            {detail.documents?.ktp_url ? (
-                                                <a className="underline" href={detail.documents.ktp_url} target="_blank" rel="noreferrer">
+                                            {detail.documents?.ktpUrl ? (
+                                                <a
+                                                    className="underline"
+                                                    href={
+                                                        detail.documents.ktpUrl
+                                                    }
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                >
                                                     Lihat
                                                 </a>
                                             ) : (
@@ -239,8 +377,16 @@ export default function Page() {
                                         </div>
                                         <div className="text-sm">
                                             Buku Nikah:{" "}
-                                            {detail.documents?.marriage_url ? (
-                                                <a className="underline" href={detail.documents.marriage_url} target="_blank" rel="noreferrer">
+                                            {detail.documents?.marriageUrl ? (
+                                                <a
+                                                    className="underline"
+                                                    href={
+                                                        detail.documents
+                                                            .marriageUrl
+                                                    }
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                >
                                                     Lihat
                                                 </a>
                                             ) : (
@@ -248,14 +394,27 @@ export default function Page() {
                                             )}
                                         </div>
                                         <div className="text-sm">
-                                            Status Verifikasi: {detail.documents?.is_verified ? "Terverifikasi" : "Belum Terverifikasi"}
+                                            Status Verifikasi:{" "}
                                         </div>
                                     </div>
                                     <div className="flex flex-col gap-1">
-                                        <div className="text-sm font-medium">Hunian Saat Ini</div>
-                                        <div className="text-sm">Kamar: {detail.current_stay?.room_number || "-"}</div>
-                                        <div className="text-sm">Properti: {detail.current_stay?.property_name || "-"}</div>
-                                        <div className="text-sm">Status: {detail.current_stay?.status || "-"}</div>
+                                        <div className="text-sm font-medium">
+                                            Hunian Saat Ini
+                                        </div>
+                                        <div className="text-sm">
+                                            Kamar:{" "}
+                                            {detail.currentStay?.roomNumber ||
+                                                "-"}
+                                        </div>
+                                        <div className="text-sm">
+                                            Properti:{" "}
+                                            {detail.currentStay?.propertyName ||
+                                                "-"}
+                                        </div>
+                                        <div className="text-sm">
+                                            Status:{" "}
+                                            {detail.currentStay?.status || "-"}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

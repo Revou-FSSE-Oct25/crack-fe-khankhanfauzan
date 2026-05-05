@@ -1,40 +1,39 @@
 import { http } from "@/lib/http/client"
-import { RoomsResponse } from "@/types/rooms"
+import { CreateRoomPayload, Room, RoomsResponse, RoomStatus } from "@/types/rooms"
 
-export type RoomStatus = "available" | "occupied" | "maintenance"
 
-export type Room = {
-  id: string
-  name: string
-  price: number
-  status: RoomStatus
-}
-
-export type CreateRoomPayload = {
-  name: string
-  price: number
-  status?: RoomStatus
-}
 
 export type UpdateRoomPayload = Partial<CreateRoomPayload>
 
-export async function fetchRooms(params?: { status?: RoomStatus }) {
-  return http.get<RoomsResponse>("/rooms", { query: params })
+export async function fetchRooms(params?: { status?: RoomStatus }, opts?: { token?: string }) {
+  return http.get<RoomsResponse>("/rooms", {
+    query: params,
+    headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,
+  })
 }
 
-export async function fetchRoomById(id: string) {
-  return http.get<Room>(`/rooms/${id}`)
+export async function fetchRoomById(id: string, opts?: { token?: string }) {
+  return http.get<{ status: number, message: string, data: Room }>(`/rooms/${id}`, {
+    cache: "no-store",
+    headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,
+  })
 }
 
-export async function createRoom(payload: CreateRoomPayload) {
-  return http.post<Room>("/rooms", payload)
+export async function createRoom(payload: CreateRoomPayload, opts?: { token?: string }) {
+  return http.post<{ status: number, message: string, data: Room }>("/rooms", payload, {
+    headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,
+  })
 }
 
-export async function updateRoom(id: string, payload: UpdateRoomPayload) {
-  return http.patch<Room>(`/rooms/${id}`, payload)
+export async function updateRoom(id: string, payload: UpdateRoomPayload, opts?: { token?: string }) {
+  return http.patch<{ status: number, message: string, data: Room }>(`/rooms/${id}`, payload, {
+    headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,
+  })
 }
 
-export async function deleteRoom(id: string) {
-  return http.delete<void>(`/rooms/${id}`)
+export async function deleteRoom(id: string, opts?: { token?: string }) {
+  return http.delete<{ status: number, message: string }>(`/rooms/${id}`, {
+    headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,
+  })
 }
 
