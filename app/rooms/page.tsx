@@ -5,20 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RoomsLegend } from "@/components/rooms/RoomsLegend";
 import { RoomDetailsCard } from "@/components/rooms/RoomDetailsCard";
-import {
-    RoomTile,
-    type Room as UiRoom,
-    type RoomStatus as UiRoomStatus,
-} from "@/components/rooms/RoomTile";
+import { RoomTile } from "@/components/rooms/RoomTile";
 import { ArrowLeftIcon, InfoIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { fetchRooms } from "@/services/rooms";
-import type { RoomsResponse, Room as ApiRoom } from "@/types/rooms";
+import type { RoomsResponse, Room, RoomStatus } from "@/types/rooms";
 
 function RoomsPage() {
-    const [selected, setSelected] = useState<UiRoom | undefined>(undefined);
+    const [selected, setSelected] = useState<Room | undefined>(undefined);
     const isGuest = false;
 
     const router = useRouter();
@@ -33,25 +29,14 @@ function RoomsPage() {
             });
     }, []);
 
-    const uiRooms: UiRoom[] = useMemo(() => {
-        const data = roomsResponse?.data ?? [];
-        const statusMap: Record<string, UiRoomStatus> = {
-            available: "available",
-            occupied: "occupied",
-            unavailable: "unavailable",
-        };
-        return data.map((r: ApiRoom) => ({
-            id: r.roomNumber,
-            floor: r.floor,
-            price: r.price,
-            size: 12,
-            status: statusMap[r.status] ?? "unavailable",
-            facilities: r.facilities,
-        }));
+    const uiRooms: Room[] = useMemo(() => {
+        return roomsResponse?.data ?? [];
     }, [roomsResponse]);
 
+    const selectedApi: Room | undefined = selected;
+
     const floors = useMemo(() => {
-        const groups: Record<number, UiRoom[]> = {};
+        const groups: Record<number, Room[]> = {};
         uiRooms.forEach((r) => {
             groups[r.floor] ??= [];
             groups[r.floor].push(r);
@@ -141,12 +126,18 @@ function RoomsPage() {
                                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                                             {items.map((room) => (
                                                 <RoomTile
-                                                    key={room.id}
+                                                    key={
+                                                        room.roomNumber ??
+                                                        String(room.id)
+                                                    }
                                                     room={room}
                                                     selected={
-                                                        selected?.id === room.id
+                                                        selected?.roomNumber ===
+                                                        room.roomNumber
                                                     }
-                                                    onSelect={setSelected}
+                                                    onSelect={(r) =>
+                                                        setSelected(r)
+                                                    }
                                                 />
                                             ))}
                                         </div>
@@ -158,12 +149,13 @@ function RoomsPage() {
                 </div>
 
                 <RoomDetailsCard
-                    room={selected}
+                    room={selectedApi}
                     isGuest={isGuest}
                     onBook={(room) => {
-                        const bookingId = `BK-${room.id}-${Date.now()}`;
+                        const bookingId = `BK-${room.roomNumber}-${Date.now()}`;
+                        const size = room.dimensions?.area ?? 12;
                         router.push(
-                            `/user/bookings/${bookingId}/payment?roomId=${room.id}&price=${room.price}&size=${room.size}&floor=${room.floor}`,
+                            `/user/bookings/${bookingId}/payment?roomId=${room.roomNumber}&price=${room.price}&size=${size}&floor=${room.floor}`,
                         );
                     }}
                 />

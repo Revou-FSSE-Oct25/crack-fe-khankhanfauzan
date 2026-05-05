@@ -8,33 +8,31 @@ export type UsersResponseMeta = {
 };
 
 export type UserProfile = {
-    avatar_url: string | null;
-    bio?: string;
-    joined_at: string;
+    avatarUrl: string | null;
+    joinedAt: string;
 };
 
 export type UserDocuments = {
-    ktp_url: string;
-    marriage_url?: string;
-    is_verified: boolean;
+    ktpUrl: string;
+    marriageUrl?: string;
 };
 
 export type UserCurrentStay = {
-    room_number: string;
-    property_name?: string;
-    status: "active" | "verifying" | string;
+    roomNumber: string;
+    propertyName?: string;
+    status: "active" | "inactive" | "verifying" | string;
 };
 
 export type User = {
-    user_id: string;
-    full_name: string;
+    id: string;
+    fullName: string;
     email: string;
-    whatsapp_no?: string;
+    whatsappNumber?: string;
     role: "tenant" | string;
-    marital_status?: "single" | "married" | string;
+    maritalStatus?: "single" | "married" | string;
     profile?: UserProfile;
     documents?: UserDocuments;
-    current_stay?: UserCurrentStay | null;
+    currentStay?: UserCurrentStay | null;
 };
 
 export type UsersResponse = {
@@ -45,16 +43,13 @@ export type UsersResponse = {
 };
 
 export type UpdateUserPayload = Partial<
-    Pick<User, "full_name" | "email" | "whatsapp_no" | "role" | "marital_status"> & {
-        profile?: Pick<UserProfile, "bio">;
-    }
+    Pick<User, "fullName" | "email" | "whatsappNumber" | "role" | "maritalStatus">
 >;
 
 export type CreateUserPayload = {
-    full_name: string;
+    fullname: string;
     email: string;
-    whatsapp_no?: string;
+    whatsappNumber?: string;
     role: string;
-    marital_status?: string;
-    profile?: Pick<UserProfile, "bio">;
+    maritalStatus?: string;
 };

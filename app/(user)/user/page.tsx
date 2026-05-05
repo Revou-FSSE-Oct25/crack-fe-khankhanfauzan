@@ -31,6 +31,8 @@ import { TransactionItem } from "@/components/transactions/TransactionItem";
 import { IconButtonBadge } from "@/components/ui/icon-button-badge";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { AlertBanner } from "@/components/ui/alert-banner";
+import Link from "next/link";
 
 function Page() {
     const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
@@ -58,6 +60,17 @@ function Page() {
         <div className="bg-muted h-full">
             <div className="flex h-full flex-col md:flex-row gap-4 md:gap-8 p-4 md:p-6">
                 <div className="flex flex-col flex-1 gap-4">
+                    <AlertBanner
+                        variant="warning"
+                        description="Lengkapi data diri anda."
+                        action={
+                            <Link href="/user/profile">
+                                <Button size="sm" variant="ghost">
+                                    Lengkapi
+                                </Button>
+                            </Link>
+                        }
+                    />
                     <RoomSummaryCard
                         imageSrc="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800"
                         imageAlt="room"

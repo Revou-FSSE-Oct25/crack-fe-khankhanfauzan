@@ -12,17 +12,7 @@ import {
     LockIcon,
 } from "lucide-react";
 import * as React from "react";
-
-type RoomStatus = "available" | "occupied" | "unavailable";
-
-type Room = {
-    id: string;
-    floor: number;
-    price: number;
-    size: number;
-    status: RoomStatus;
-    facilities: string[];
-};
+import { Room, RoomStatus } from "@/types/rooms";
 
 function statusClasses(status: RoomStatus) {
     if (status === "available") {
@@ -71,7 +61,9 @@ function RoomTile({
                 )}
             >
                 <DoorClosedIcon />
-                <span className="mt-1 font-semibold">{room.id}</span>
+                <span className="mt-1 font-semibold">
+                    {room.roomNumber ?? String(room.id)}
+                </span>
             </button>
             {selected && (
                 <CheckIcon
@@ -93,10 +85,15 @@ function RoomTile({
                 <TooltipTrigger asChild>{content}</TooltipTrigger>
                 <TooltipContent sideOffset={8}>
                     <div className="space-y-1">
-                        <p className="font-semibold">Kamar {room.id}</p>
-                        <p>Status: available</p>
+                        <p className="font-semibold">
+                            Kamar {room.roomNumber ?? String(room.id)}
+                        </p>
+                        <p>Status: {room.status}</p>
                         <p>Harga: {formatIDR(room.price)}/bulan</p>
-                        <p>Ukuran: {room.size}m²</p>
+                        <p>
+                            Ukuran: {room.dimensions?.area ?? 12}
+                            {room.dimensions?.unit ?? "m"}²
+                        </p>
                     </div>
                 </TooltipContent>
             </Tooltip>

@@ -1,9 +1,18 @@
+"use client";
+
+import FacilityIcon from "@/components/facilities/FacilityIcon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconSurface } from "@/components/ui/icon-surface";
+import { Spinner } from "@/components/ui/spinner";
+import { fetchLandingPageSummary } from "@/services/public";
+import { LandingPageData } from "@/types/landing-page";
+import { formatRupiah } from "@/utils/format";
+import { getInitials } from "@/utils/strings";
 import {
     BathIcon,
+    BedDoubleIcon,
     BedIcon,
     CalendarIcon,
     ClockIcon,
@@ -21,8 +30,39 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 function page() {
+    const [isLoading, setIsLoading] = useState(true);
+    const [data, setData] = useState<LandingPageData | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        async function loadData() {
+            try {
+                setIsLoading(true);
+
+                const response = await fetchLandingPageSummary();
+
+                setData(response.data);
+
+                console.log(response, "response:");
+            } catch (error: any) {
+                setError(
+                    error.message || "Terjadi kesalahan saat memuat data.",
+                );
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        loadData();
+    }, []);
+
+    if (isLoading) return <Spinner className="mx-auto h-full" />;
+
+    if (error || !data) return <p>Error: {error}</p>;
+
     return (
         <div className="max-w-7xl mx-auto px-4">
             <div className="grid md:grid-cols-2 gap-8 p-6 pt-0">
@@ -34,7 +74,10 @@ function page() {
                         </p>
                     </div>
                     <div className="flex items-baseline gap-2">
-                        <h2 className="text-2xl font-semibold">Rp 1.000.000</h2>
+                        <h2 className="text-2xl font-semibold">
+                            {formatRupiah(data.cheapestRoom?.priceMonthly) ??
+                                "-"}
+                        </h2>
                         <p className="text-muted-foreground">/ bulan</p>
                     </div>
                     <Link href="/rooms">
@@ -57,7 +100,7 @@ function page() {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <BedIcon />
+                            <BedDoubleIcon />
                             <div className="flex flex-col">
                                 <p className="text-muted-foreground">Kasur</p>
                                 <p>Queen</p>
@@ -67,7 +110,10 @@ function page() {
                             <MaximizeIcon />
                             <div className="flex flex-col">
                                 <p className="text-muted-foreground">Ukuran</p>
-                                <p>3x4 m</p>
+                                <p>
+                                    {data.cheapestRoom?.width ?? "-"}x
+                                    {data.cheapestRoom?.length ?? "-"} m
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -86,161 +132,69 @@ function page() {
                     <div className="flex flex-col gap-3">
                         <h2 className="text-lg font-semibold">Fasilitas</h2>
                         <div className="grid grid-cols-2 gap-3">
-                            <Card>
-                                <CardContent className="flex gap-2 items-center">
-                                    <IconSurface
-                                        bgClass="bg-accent"
-                                        rounded="rounded-xl"
-                                    >
-                                        <WifiIcon color="var(--color-primary)" />
-                                    </IconSurface>
-                                    Wi‑Fi
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="flex gap-2 items-center">
-                                    <IconSurface
-                                        bgClass="bg-accent"
-                                        rounded="rounded-xl"
-                                    >
-                                        <WindIcon color="var(--color-primary)" />
-                                    </IconSurface>
-                                    AC
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="flex gap-2 items-center">
-                                    <IconSurface
-                                        bgClass="bg-accent"
-                                        rounded="rounded-xl"
-                                    >
-                                        <BathIcon color="var(--color-primary)" />
-                                    </IconSurface>
-                                    Kamar Mandi Dalam
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="flex gap-2 items-center">
-                                    <IconSurface
-                                        bgClass="bg-accent"
-                                        rounded="rounded-xl"
-                                    >
-                                        <CookingPotIcon color="var(--color-primary)" />
-                                    </IconSurface>
-                                    Dapur
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="flex gap-2 items-center">
-                                    <IconSurface
-                                        bgClass="bg-accent"
-                                        rounded="rounded-xl"
-                                    >
-                                        <Columns2Icon color="var(--color-primary)" />
-                                    </IconSurface>
-                                    Lemari Pakaian
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="flex gap-2 items-center">
-                                    <IconSurface
-                                        bgClass="bg-accent"
-                                        rounded="rounded-xl"
-                                    >
-                                        <LampDeskIcon color="var(--color-primary)" />
-                                    </IconSurface>
-                                    Meja Kerja
-                                </CardContent>
-                            </Card>
+                            {data.facilities.map((facility) => (
+                                <Card>
+                                    <CardContent className="flex gap-2 items-center">
+                                        <IconSurface
+                                            bgClass="bg-accent"
+                                            rounded="rounded-xl"
+                                        >
+                                            <FacilityIcon
+                                                iconName={facility.iconUrl}
+                                            />
+                                        </IconSurface>
+                                        {facility.name}
+                                    </CardContent>
+                                </Card>
+                            ))}
                         </div>
                     </div>
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2">
                             <StarIcon fill="orange" stroke="0" />
-                            <h2 className="text-xl font-semibold">4.9</h2>
-                            <p className="text-muted-foreground">· 2 ulasan</p>
+                            <h2 className="text-xl font-semibold">
+                                {data.reviewStats._avg.rating}
+                            </h2>
+                            <p className="text-muted-foreground">
+                                · {data.reviewStats._count.id} ulasan
+                            </p>
                         </div>
                         <div className="grid grid-cols-1 gap-4">
-                            <Card>
-                                <CardContent className="flex gap-4 items-start">
-                                    <Avatar size="lg">
-                                        <AvatarImage src="https://i.pravatar.cc/300" />
-                                        <AvatarFallback>AP</AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex flex-col gap-2">
-                                        <h2 className="font-semibold">
-                                            Andi Pratama
-                                        </h2>
-                                        <div className="flex">
-                                            <StarIcon
-                                                fill="orange"
-                                                stroke="0"
-                                            />
-                                            <StarIcon
-                                                fill="orange"
-                                                stroke="0"
-                                            />
-                                            <StarIcon
-                                                fill="orange"
-                                                stroke="0"
-                                            />
-                                            <StarIcon
-                                                fill="orange"
-                                                stroke="0"
-                                            />
-                                            <StarIcon
-                                                fill="orange"
-                                                stroke="0"
-                                            />
+                            {data.featuredReviews.map((review) => (
+                                <Card>
+                                    <CardContent className="flex gap-4 items-start">
+                                        <Avatar size="lg">
+                                            <AvatarImage src="https://i.pravatar.cc/300" />
+                                            <AvatarFallback>
+                                                {getInitials(
+                                                    review.booking?.tenant
+                                                        ?.profile?.fullName,
+                                                )}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex flex-col gap-2">
+                                            <h2 className="font-semibold">
+                                                {review.booking?.tenant?.profile
+                                                    ?.fullName ?? "Anonim"}
+                                            </h2>
+                                            <div className="flex">
+                                                {Array.from({
+                                                    length: review.rating,
+                                                }).map((_, i) => (
+                                                    <StarIcon
+                                                        fill="orange"
+                                                        stroke="0"
+                                                    />
+                                                ))}
+                                            </div>
+                                            <p className="text-muted-foreground">
+                                                {review.comment ??
+                                                    "Tidak ada komentar tertulis."}
+                                            </p>
                                         </div>
-                                        <p className="text-muted-foreground">
-                                            Kosan yang sangat nyaman dan bersih.
-                                            Lokasi strategis dan admin sangat
-                                            responsif. Highly recommended!
-                                        </p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="flex gap-4 items-start">
-                                    <Avatar size="lg">
-                                        <AvatarImage src="https://i.pravatar.cc/300" />
-                                        <AvatarFallback>SW</AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex flex-col gap-2">
-                                        <h2 className="font-semibold">
-                                            Sarah Wijaya
-                                        </h2>
-                                        <div className="flex">
-                                            <StarIcon
-                                                fill="orange"
-                                                stroke="0"
-                                            />
-                                            <StarIcon
-                                                fill="orange"
-                                                stroke="0"
-                                            />
-                                            <StarIcon
-                                                fill="orange"
-                                                stroke="0"
-                                            />
-                                            <StarIcon
-                                                fill="orange"
-                                                stroke="0"
-                                            />
-                                            <StarIcon
-                                                fill="orange"
-                                                stroke="0"
-                                            />
-                                        </div>
-                                        <p className="text-muted-foreground">
-                                            Fasilitas lengkap, harga terjangkau.
-                                            Sistem booking online sangat
-                                            memudahkan. Puas banget!
-                                        </p>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                    </CardContent>
+                                </Card>
+                            ))}
                         </div>
                     </div>
                 </div>

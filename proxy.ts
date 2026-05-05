@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const protectedRoutes = ["/dashboard", "/admin"];
-const publicRoutes = ["/login", "/"];
+const publicRoutes = ["/", "/room", "/login", "/register", "/forgot-password"];
 
 export async function proxy(req: NextRequest) {
     const path = req.nextUrl.pathname;
-    const isProtectedRoute = protectedRoutes.some((route) =>
-        path.startsWith(route),
-    );
     const isPublicRoute = publicRoutes.includes(path);
 
     const cookie = req.cookies.get("session")?.value;
     let session:
-        | { userId?: number; role?: string; expiresAt?: string }
+        | { userId?: number | string; role?: string; expiresAt?: string }
         | null = null;
 
     if (cookie) {
@@ -30,22 +26,17 @@ export async function proxy(req: NextRequest) {
         }
     }
 
-    // if (isProtectedRoute && !session?.userId) {
-    //     const loginUrl = new URL("/login", req.url);
-    //     loginUrl.searchParams.set("redirect", path);
-    //     return NextResponse.redirect(loginUrl);
-    // }
+    if (path.startsWith("/admin")) {
+        if (session?.role !== "admin") {
+            return NextResponse.redirect(new URL("/", req.url));
+        }
+        return NextResponse.next();
+    }
 
-    // if (isPublicRoute && path === "/login" && session?.userId) {
-    //     return NextResponse.redirect(new URL("/", req.url));
-    // }
-
-    // if (path.startsWith("/admin") && session?.role !== "admin") {
-    //     return NextResponse.redirect(new URL("/", req.url));
-    // }
-
-    if (path.startsWith("/dashboard") && session?.role !== "admin") {
-        return NextResponse.redirect(new URL("/", req.url));
+    if (!isPublicRoute && !session?.userId) {
+        const loginUrl = new URL("/login", req.url);
+        loginUrl.searchParams.set("redirect", path);
+        return NextResponse.redirect(loginUrl);
     }
 
     return NextResponse.next();

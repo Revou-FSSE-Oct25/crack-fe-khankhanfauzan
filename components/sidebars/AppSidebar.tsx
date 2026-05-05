@@ -23,11 +23,14 @@ import {
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { Avatar } from "../ui/avatar";
+import { logout } from "@/actions/auth";
+import { useRouter } from "next/navigation";
 
 type AdminSidebarProps = React.ComponentProps<typeof Sidebar>;
 
 export function AppSidebar({ ...props }: AdminSidebarProps) {
     const { toggleSidebar, open } = useSidebar();
+    const router = useRouter();
 
     return (
         <Sidebar collapsible="icon" {...props}>
@@ -110,6 +113,10 @@ export function AppSidebar({ ...props }: AdminSidebarProps) {
                             <Button
                                 variant="ghostDestructive"
                                 className="justify-start"
+                                onClick={async () => {
+                                    await logout();
+                                    router.push("/login");
+                                }}
                             >
                                 <LogOutIcon />
                                 Logout

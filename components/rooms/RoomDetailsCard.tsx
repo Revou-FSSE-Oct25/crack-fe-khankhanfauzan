@@ -15,7 +15,8 @@ import {
     ChefHatIcon,
     ZapIcon,
 } from "lucide-react";
-import type { Room, RoomStatus } from "./RoomTile";
+import type { Room, RoomStatus } from "@/types/rooms";
+import { Facility } from "@/types/facilities";
 
 function statusLabel(status: RoomStatus) {
     if (status === "available") return "Tersedia";
@@ -37,29 +38,20 @@ function formatIDR(amount: number) {
     }).format(amount);
 }
 
-function mapFacilities(items: string[]) {
-    return items.map((label) => {
-        if (label.toLowerCase().includes("ac"))
-            return { icon: WindIcon, label: "AC" };
-        if (
-            label.toLowerCase().includes("wifi") ||
-            label.toLowerCase().includes("wi-fi")
-        )
-            return { icon: WifiIcon, label: "Wi-Fi" };
-        if (label.toLowerCase().includes("kamar mandi"))
-            return { icon: BathIcon, label };
-        if (label.toLowerCase().includes("lemari"))
-            return { icon: Columns2Icon, label };
-        if (label.toLowerCase().includes("meja"))
-            return { icon: LampDeskIcon, label };
-        if (
-            label.toLowerCase().includes("kitchen") ||
-            label.toLowerCase().includes("sink")
-        )
+type FacilitiesListItems = Parameters<typeof FacilitiesList>[0]["items"];
+function mapFacilities(items: Facility[]): FacilitiesListItems {
+    return items.map((item) => {
+        const label = item.name || String(item.id);
+        const txt = label.toLowerCase();
+        if (txt.includes("ac")) return { icon: WindIcon, label };
+        if (txt.includes("wifi") || txt.includes("wi-fi"))
+            return { icon: WifiIcon, label };
+        if (txt.includes("kamar mandi")) return { icon: BathIcon, label };
+        if (txt.includes("lemari")) return { icon: Columns2Icon, label };
+        if (txt.includes("meja")) return { icon: LampDeskIcon, label };
+        if (txt.includes("kitchen") || txt.includes("sink"))
             return { icon: ChefHatIcon, label };
-
-        if (label.toLowerCase().includes("listrik"))
-            return { icon: ZapIcon, label };
+        if (txt.includes("listrik")) return { icon: ZapIcon, label };
         return { icon: StarIcon, label };
     });
 }
@@ -83,7 +75,7 @@ function RoomDetailsCard({
             {room ? (
                 <>
                     <CardHeader>
-                        <CardTitle>{`Kamar ${room.id}`}</CardTitle>
+                        <CardTitle>{`Kamar ${room.roomNumber ?? room.id}`}</CardTitle>
                         <p className="text-muted-foreground">
                             Lantai {room.floor}
                         </p>
@@ -100,7 +92,9 @@ function RoomDetailsCard({
                                 <p className="text-sm text-muted-foreground">
                                     Ukuran
                                 </p>
-                                <p className="font-medium">{`${room.size}m²`}</p>
+                                <p className="font-medium">
+                                    {`${room.dimensions?.area ?? 12}${room.dimensions?.unit ?? "m"}²`}
+                                </p>
                             </div>
                             <div className="flex justify-between border-b pb-2">
                                 <p className="text-sm text-muted-foreground">
@@ -119,7 +113,7 @@ function RoomDetailsCard({
                         <div>
                             <p className="text-sm font-medium">Fasilitas</p>
                             <FacilitiesList
-                                items={mapFacilities(room.facilities)}
+                                items={mapFacilities(room.facilities ?? [])}
                                 className="grid-cols-1"
                             />
                         </div>

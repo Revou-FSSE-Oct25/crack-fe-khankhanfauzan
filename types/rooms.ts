@@ -1,15 +1,26 @@
-export type RoomStatusApi = "available" | "occupied" | "unavailable" | string;
+import { Facility } from "./facilities";
 
-export type RoomTypeApi = "standard" | "deluxe" | string;
+export type RoomStatus = "available" | "occupied" | "unavailable"
+
+export type RoomType = "standard" | "deluxe" | string;
+
 
 export type Room = {
     id: number;
     roomNumber: string;
-    roomType: RoomTypeApi;
+    roomType: RoomType;
     floor: number;
     price: number;
-    status: RoomStatusApi;
-    facilities: string[];
+    status: RoomStatus;
+    facilities: Facility[];
+    dimensions: RoomDimensions;
+};
+
+export type RoomDimensions = {
+    length: number;
+    width: number;
+    area?: number;
+    unit?: 'm';
 };
 
 export type RoomsResponseMeta = {
@@ -25,3 +36,13 @@ export type RoomsResponse = {
     data: Room[];
     meta: RoomsResponseMeta;
 };
+
+export type CreateRoomPayload = {
+    roomNumber: string
+    floor: number
+    roomType: RoomType
+    price: number
+    status: RoomStatus
+    facilities: Facility[]
+    dimensions: RoomDimensions
+}
