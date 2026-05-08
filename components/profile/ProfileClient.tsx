@@ -12,7 +12,7 @@ export function ProfileClient({ user }: { user: User | null }) {
                     <SummarySidebar user={user || null} />
                 </aside>
                 <section className="flex-1 flex flex-col gap-4">
-                    <PersonalInfoSection />
+                    <PersonalInfoSection user={user} />
                     <NotificationSettingsSection />
                     <SecuritySection />
                 </section>

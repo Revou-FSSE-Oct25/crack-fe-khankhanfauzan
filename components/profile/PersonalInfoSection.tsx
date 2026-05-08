@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -13,6 +13,7 @@ import {
     FieldError,
     FieldGroup,
     FieldLabel,
+    FieldDescription,
 } from "@/components/ui/field";
 import {
     InputGroup,
@@ -33,10 +34,15 @@ import {
     PencilIcon,
     IdCardIcon,
     BookOpenCheckIcon,
+    Loader2Icon,
 } from "lucide-react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { http } from "@/lib/http/client";
+import { updateProfile } from "@/services/users";
 import { AlertBanner } from "@/components/ui/alert-banner";
+import type { User } from "@/types/users";
+import Image from "next/image";
+import { getSession } from "@/actions/auth";
 
 type FormValues = {
     fullname: string;
@@ -46,95 +52,96 @@ type FormValues = {
     address?: string;
     ktp?: string;
     marriage?: string;
+    ktpFile?: File | null;
+    marriageFile?: File | null;
 };
 
-function readSession() {
-    const cookies = document.cookie ? document.cookie.split("; ") : [];
-    for (const c of cookies) {
-        const [k, ...rest] = c.split("=");
-        if (k === "session") {
-            try {
-                return JSON.parse(decodeURIComponent(rest.join("="))) as {
-                    userId?: string | number;
-                    accessToken?: string;
-                };
-            } catch {
-                return null;
-            }
-        }
-    }
-    return null;
-}
-
-export function PersonalInfoSection() {
+export function PersonalInfoSection({ user }: { user: User | null }) {
+    const [isMounted, setIsMounted] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [banner, setBanner] = useState<{
         type: "success" | "error" | "info";
         text: string;
     } | null>(null);
+
     const {
         register,
         handleSubmit,
         control,
         reset,
+        setValue,
         formState: { errors, isSubmitting },
     } = useForm<FormValues>({
         defaultValues: {
-            fullname: "",
-            email: "",
-            whatsappNumber: "",
-            marital_status: "single",
+            fullname: user?.profile?.fullName || "",
+            email: user?.email || "",
+            whatsappNumber:
+                user?.profile?.whatsappNumber ||
+                user?.profile?.whatsappNumber ||
+                "",
+            marital_status:
+                (user?.profile?.maritalStatus as "single" | "married") ||
+                "single",
             address: "",
-            ktp: "",
-            marriage: "",
+            ktp: user?.document?.fotoKtpUrl || "",
+            marriage: user?.document?.fotoBukuNikahUrl || "",
+            ktpFile: null,
+            marriageFile: null,
         },
     });
-    const marital = useWatch({ control, name: "marital_status" });
 
-    const loadMe = useCallback(async () => {
-        const s = readSession();
-        const token = s?.accessToken;
-        if (!token) return;
-        try {
-            const res = await http.get("/auth/me", {
-                headers: { Authorization: `Bearer ${token}` },
-                cache: "no-store",
-            });
-            const u =
-                (
-                    res as {
-                        data?: {
-                            fullname?: string;
-                            email?: string;
-                            whatsappNumber?: string;
-                            marital_status?: string;
-                        };
-                    }
-                )?.data ?? {};
-            reset({
-                fullname: u.fullname ?? "",
-                email: u.email ?? "",
-                whatsappNumber: u.whatsappNumber ?? "",
-                marital_status:
-                    (u.marital_status as "single" | "married") ?? "single",
-                address: "",
-                ktp: "",
-                marriage: "",
-            });
-        } catch {
-            setBanner({ type: "error", text: "Gagal memuat profil" });
+    const marital = useWatch({ control, name: "marital_status" });
+    const ktpUrl = useWatch({ control, name: "ktp" });
+    const marriageUrl = useWatch({ control, name: "marriage" });
+    const ktpFile = useWatch({ control, name: "ktpFile" });
+    const marriageFile = useWatch({ control, name: "marriageFile" });
+
+    const ktpInputRef = useRef<HTMLInputElement>(null);
+    const marriageInputRef = useRef<HTMLInputElement>(null);
+
+    const handleKtpFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setValue("ktpFile", file);
+            setValue("ktp", URL.createObjectURL(file));
         }
-    }, [reset]);
+    };
+
+    const handleMarriageFileChange = (
+        e: React.ChangeEvent<HTMLInputElement>,
+    ) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setValue("marriageFile", file);
+            setValue("marriage", URL.createObjectURL(file));
+        }
+    };
 
     useEffect(() => {
-        const t = setTimeout(() => {
-            void loadMe();
-        }, 0);
-        return () => clearTimeout(t);
-    }, [loadMe]);
+        setIsMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (user) {
+            reset({
+                fullname: user.profile?.fullName || "",
+                email: user.email || "",
+                whatsappNumber:
+                    user.profile?.whatsappNumber ||
+                    user.profile?.whatsappNumber ||
+                    "",
+                marital_status:
+                    (user.profile?.maritalStatus as "single" | "married") ||
+                    "single",
+                address: "",
+                ktp: user.document?.fotoKtpUrl || "",
+                marriage: user.document?.fotoBukuNikahUrl || "",
+            });
+        }
+    }, [user, reset]);
 
     async function onSubmit(values: FormValues) {
-        const s = readSession();
+        const s = getSession();
         const token = s?.accessToken;
         const userId = s?.userId;
         if (!token || !userId) {
@@ -144,19 +151,24 @@ export function PersonalInfoSection() {
             });
             return;
         }
-        const payload = {
-            fullname: values.fullname,
-            email: values.email,
-            whatsappNumber: values.whatsappNumber || undefined,
-            marital_status: values.marital_status,
-            address: values.address || undefined,
-            ktp: values.ktp || undefined,
-            marriage: values.marriage || undefined,
-        };
+
+        const formData = new FormData();
+        if (values.fullname) formData.append("fullName", values.fullname);
+        if (values.whatsappNumber)
+            formData.append("whatsappNumber", values.whatsappNumber);
+        if (values.marital_status)
+            formData.append("maritalStatus", values.marital_status);
+
+        if (values.ktpFile) {
+            formData.append("fotoKtp", values.ktpFile);
+        }
+
+        if (values.marital_status === "married" && values.marriageFile) {
+            formData.append("fotoBukuNikah", values.marriageFile);
+        }
+
         try {
-            await http.patch(`/users/${userId}/profile`, payload, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            await updateProfile(userId.toString(), formData, { token });
             setIsEditing(false);
             setBanner({ type: "success", text: "Profil berhasil diperbarui" });
         } catch {
@@ -185,6 +197,7 @@ export function PersonalInfoSection() {
                             Informasi Pribadi
                         </h2>
                         <Button
+                            type="button"
                             className="w-min"
                             variant="outline"
                             size="sm"
@@ -220,26 +233,21 @@ export function PersonalInfoSection() {
                             </FieldError>
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="email">
-                                Email{" "}
-                                <span className="text-destructive">*</span>
-                            </FieldLabel>
+                            <FieldLabel htmlFor="email">Email</FieldLabel>
                             <InputGroup>
                                 <InputGroupInput
                                     id="email"
                                     type="email"
-                                    disabled={!isEditing}
-                                    {...register("email", {
-                                        required: "Email wajib diisi",
-                                    })}
+                                    disabled={true}
+                                    {...register("email")}
                                 />
                                 <InputGroupAddon>
                                     <MailIcon />
                                 </InputGroupAddon>
                             </InputGroup>
-                            <FieldError>
-                                {errors.email?.message?.toString()}
-                            </FieldError>
+                            <FieldDescription>
+                                Email tidak dapat diubah
+                            </FieldDescription>
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="whatsappnumber">
@@ -268,42 +276,79 @@ export function PersonalInfoSection() {
                                 Status Kawin{" "}
                                 <span className="text-destructive">*</span>
                             </FieldLabel>
-                            <Controller
-                                control={control}
-                                name="marital_status"
-                                render={({ field }) => (
-                                    <Select
-                                        value={field.value}
-                                        onValueChange={field.onChange}
-                                    >
-                                        <SelectTrigger disabled={!isEditing}>
-                                            <SelectValue placeholder="Select Marital Status" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="married">
-                                                Married
-                                            </SelectItem>
-                                            <SelectItem value="single">
-                                                Single
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                            />
+                            {isMounted ? (
+                                <Controller
+                                    control={control}
+                                    name="marital_status"
+                                    render={({ field }) => (
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                        >
+                                            <SelectTrigger
+                                                disabled={!isEditing}
+                                            >
+                                                <SelectValue placeholder="Select Marital Status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="married">
+                                                    Married
+                                                </SelectItem>
+                                                <SelectItem value="single">
+                                                    Single
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                />
+                            ) : (
+                                <div className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 opacity-50"></div>
+                            )}
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="ktp">KTP</FieldLabel>
-                            <InputGroup>
-                                <InputGroupInput
-                                    id="ktp"
-                                    type="text"
-                                    disabled={!isEditing}
-                                    {...register("ktp")}
-                                />
-                                <InputGroupAddon>
-                                    <IdCardIcon />
-                                </InputGroupAddon>
-                            </InputGroup>
+                            {isEditing ? (
+                                <div className="flex items-center gap-4">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() =>
+                                            ktpInputRef.current?.click()
+                                        }
+                                    >
+                                        Pilih File KTP
+                                    </Button>
+                                    <input
+                                        type="file"
+                                        accept="image/png, image/jpeg, image/jpg"
+                                        className="hidden"
+                                        ref={ktpInputRef}
+                                        onChange={handleKtpFileChange}
+                                    />
+                                    <span className="text-sm text-muted-foreground truncate max-w-50">
+                                        {ktpFile?.name ||
+                                            "Belum ada file terpilih"}
+                                    </span>
+                                </div>
+                            ) : null}
+
+                            {ktpUrl && (
+                                <div className="mt-2">
+                                    <Image
+                                        src={ktpUrl}
+                                        alt="KTP"
+                                        width={200}
+                                        height={125}
+                                        className="rounded-md object-cover border"
+                                        unoptimized={ktpUrl.startsWith("blob:")}
+                                    />
+                                </div>
+                            )}
+                            {!isEditing && !ktpUrl && (
+                                <p className="text-sm text-muted-foreground">
+                                    Belum ada KTP yang diunggah
+                                </p>
+                            )}
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="marriage">
@@ -312,17 +357,50 @@ export function PersonalInfoSection() {
                                     <span className="text-destructive">*</span>
                                 ) : null}
                             </FieldLabel>
-                            <InputGroup>
-                                <InputGroupInput
-                                    id="marriage"
-                                    type="text"
-                                    disabled={!isEditing}
-                                    {...register("marriage")}
-                                />
-                                <InputGroupAddon>
-                                    <BookOpenCheckIcon />
-                                </InputGroupAddon>
-                            </InputGroup>
+                            {isEditing ? (
+                                <div className="flex items-center gap-4">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() =>
+                                            marriageInputRef.current?.click()
+                                        }
+                                    >
+                                        Pilih File Buku Nikah
+                                    </Button>
+                                    <input
+                                        type="file"
+                                        accept="image/png, image/jpeg, image/jpg"
+                                        className="hidden"
+                                        ref={marriageInputRef}
+                                        onChange={handleMarriageFileChange}
+                                    />
+                                    <span className="text-sm text-muted-foreground truncate max-w-50">
+                                        {marriageFile?.name ||
+                                            "Belum ada file terpilih"}
+                                    </span>
+                                </div>
+                            ) : null}
+
+                            {marriageUrl && (
+                                <div className="mt-2">
+                                    <Image
+                                        src={marriageUrl}
+                                        alt="Buku Nikah"
+                                        width={200}
+                                        height={125}
+                                        className="rounded-md object-cover border"
+                                        unoptimized={marriageUrl.startsWith(
+                                            "blob:",
+                                        )}
+                                    />
+                                </div>
+                            )}
+                            {!isEditing && !marriageUrl && (
+                                <p className="text-sm text-muted-foreground">
+                                    Belum ada Buku Nikah yang diunggah
+                                </p>
+                            )}
                         </Field>
                     </FieldGroup>
                 </CardContent>
@@ -333,7 +411,12 @@ export function PersonalInfoSection() {
                             type="submit"
                             disabled={isSubmitting}
                         >
-                            Submit
+                            {isSubmitting && (
+                                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                            )}
+                            {isSubmitting
+                                ? "Mengunggah..."
+                                : "Simpan Perubahan"}
                         </Button>
                     </CardFooter>
                 ) : null}

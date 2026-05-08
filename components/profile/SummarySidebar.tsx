@@ -1,4 +1,5 @@
 "use client";
+import { useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,9 +9,12 @@ import {
     CreditCardIcon,
     WrenchIcon,
     MessageCircleMoreIcon,
+    Loader2Icon,
 } from "lucide-react";
 import Link from "next/link";
 import type { User } from "@/types/users";
+import { updateProfile } from "@/services/users";
+import { getSession } from "@/actions/auth";
 
 function initials(name?: string) {
     const n = (name || "").trim();
@@ -22,11 +26,52 @@ function initials(name?: string) {
 }
 
 export function SummarySidebar({ user }: { user: User | null }) {
-    const name = user?.fullName || "Pengguna";
+    const name = user?.profile?.fullName || "Pengguna";
     const email = user?.email || "";
     const role = user?.role === "tenant" ? "Penghuni" : user?.role || "";
-    const room = user?.currentStay?.roomNumber || "-";
-    const avatarUrl = user?.profile?.avatarUrl || undefined;
+    const room = (user as any)?.currentStay?.roomNumber || "-";
+    const [avatarUrl, setAvatarUrl] = useState(
+        user?.document?.fotoProfileUrl || undefined,
+    );
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const s = getSession();
+        const token = s?.accessToken;
+        const userId = s?.userId;
+
+        if (!token || !userId) {
+            alert("Sesi tidak ditemukan. Silakan login kembali.");
+            return;
+        }
+
+        // Optimistic UI update
+        const objectUrl = URL.createObjectURL(file);
+        setAvatarUrl(objectUrl);
+        setIsUploading(true);
+
+        const formData = new FormData();
+        formData.append("fotoProfile", file);
+
+        try {
+            await updateProfile(userId.toString(), formData, { token });
+            // Profile updated successfully
+        } catch (error) {
+            console.error("Gagal mengunggah foto profil:", error);
+            alert("Gagal mengunggah foto profil. Silakan coba lagi.");
+            // Revert optimistic update
+            setAvatarUrl(user?.document.fotoProfileUrl || undefined);
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+        }
+    };
 
     return (
         <>
@@ -44,9 +89,22 @@ export function SummarySidebar({ user }: { user: User | null }) {
                             className="absolute -bottom-1 -right-1 rounded-full border-4 border-white"
                             variant="default"
                             aria-label="Edit foto profil"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
                         >
-                            <CameraIcon className="size-3.5" />
+                            {isUploading ? (
+                                <Loader2Icon className="size-3.5 animate-spin" />
+                            ) : (
+                                <CameraIcon className="size-3.5" />
+                            )}
                         </Button>
+                        <input
+                            type="file"
+                            accept="image/png, image/jpeg, image/jpg"
+                            className="hidden"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                        />
                     </div>
                     <div className="flex flex-col">
                         <h2 className="text-lg sm:text-xl font-semibold">

@@ -19,10 +19,9 @@ async function fetchUserFromCookie(): Promise<User | null> {
             accessToken?: string;
         };
         const token = parsed?.accessToken;
-        console.log(token, "accessToken")
         if (!token) return null;
         const res = await getMe(token);
-        
+
         return res?.data ?? null;
     } catch {
         return null;
@@ -31,6 +30,5 @@ async function fetchUserFromCookie(): Promise<User | null> {
 
 export default async function Page() {
     const user = await fetchUserFromCookie();
-    console.log(user, "user");
     return <ProfileClient user={user} />;
 }
