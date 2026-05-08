@@ -1,6 +1,6 @@
 "use client";
-import { useMemo, useState } from "react";
-import { useSearchParams, useRouter, useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +22,6 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -31,292 +30,363 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { AlertTriangleIcon, CreditCardIcon, InfoIcon } from "lucide-react";
+import {
+    CreditCardIcon,
+    InfoIcon,
+    Loader2Icon,
+    UploadIcon,
+} from "lucide-react";
+import { getSession } from "@/actions/auth";
+import { getBookingById } from "@/services/bookings";
+import { uploadPaymentProof } from "@/services/transactions";
+import { Booking } from "@/types/bookings";
+import { Spinner } from "@/components/ui/spinner";
+import { formatRupiah } from "@/utils/format";
+import Image from "next/image";
+import { ApiResponse } from "@/types/types";
 
-function formatIDR(amount: number) {
-    return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        maximumFractionDigits: 0,
-    }).format(amount);
-}
+const BANK_DETAILS = {
+    bankName: "Bank Mandiri",
+    accountNumber: "8732 1122 33",
+    accountName: "Emerald House",
+    logoUrl:
+        "https://res.cloudinary.com/dvr6ibd7e/image/upload/v1778152375/logo_bank_mandiri_nd9xcw.png",
+};
 
 function BookingPaymentPage() {
     const params = useParams();
-    const search = useSearchParams();
-    useRouter();
+    const router = useRouter();
 
     const bookingId = String(params?.bookingId ?? "");
-    const roomId = search.get("roomId") ?? "";
-    const price = Number(search.get("price") ?? 0);
-    const floor = Number(search.get("floor") ?? 0);
-    const size = Number(search.get("size") ?? 0);
 
-    const [payType, setPayType] = useState<"dp" | "lunas">("dp");
-    const [months, setMonths] = useState<number>(6);
-    const [planDate, setPlanDate] = useState<string>("");
+    const [booking, setBooking] = useState<ApiResponse<Booking>["data"] | null>(
+        null,
+    );
+    const [loading, setLoading] = useState(true);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+    // form state
+    const [payType, setPayType] = useState<"dp" | "lunas">("lunas");
     const [method, setMethod] = useState<"transfer" | "cash">("transfer");
     const [dpAmount, setDpAmount] = useState<number>(0);
+    const [file, setFile] = useState<File | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const total = useMemo(() => price * months, [price, months]);
+    useEffect(() => {
+        if (!bookingId) return;
+        const session = getSession();
+        getBookingById(bookingId, { token: session?.accessToken })
+            .then((res) => {
+                setBooking(res.data);
+                setDpAmount(res.data.totalPrice); // default dp to full amount
+            })
+            .catch((e) => setErrorMsg(e.message))
+            .finally(() => setLoading(false));
+    }, [bookingId]);
+
+    const total = booking?.totalPrice || 0;
     const dueNow = useMemo(
         () => (payType === "lunas" ? total : Math.min(dpAmount || 0, total)),
         [payType, total, dpAmount],
     );
     const dueLater = useMemo(() => total - dueNow, [total, dueNow]);
 
-    const userProfile = useMemo(() => {
-        return {
-            maritalStatus: undefined as undefined | "single" | "married",
-            ktpUploaded: false,
-            marriageBookUploaded: false,
-        };
-    }, []);
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selected = e.target.files?.[0];
+        if (selected) {
+            setFile(selected);
+        }
+    };
 
-    const profileValid = useMemo(() => {
-        const statusOk = !!userProfile.maritalStatus;
-        const docsOk =
-            userProfile.ktpUploaded &&
-            (userProfile.maritalStatus !== "married" ||
-                userProfile.marriageBookUploaded);
-        return statusOk && docsOk;
-    }, [userProfile]);
+    const onSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!booking) return;
+
+        const invoice = booking.invoices?.[0];
+        if (!invoice) {
+            alert("Invoice tidak ditemukan untuk booking ini.");
+            return;
+        }
+
+        if (!file) {
+            alert("Silakan upload bukti pembayaran terlebih dahulu.");
+            return;
+        }
+
+        const confirm = window.confirm(
+            "Apakah anda yakin ingin mengirim bukti pembayaran ini?",
+        );
+        if (!confirm) return;
+
+        setIsSubmitting(true);
+        try {
+            const session = getSession();
+            const formData = new FormData();
+            formData.append("invoiceId", invoice.id);
+            formData.append("amount", String(dueNow));
+            formData.append("paymentMethod", method);
+            formData.append("file", file);
+
+            await uploadPaymentProof(formData, { token: session?.accessToken });
+            alert("Bukti pembayaran berhasil diunggah!");
+            router.push("/user/bookings");
+        } catch (error: any) {
+            console.error("Upload payment error:", error);
+            alert(
+                error?.response?.data?.message ||
+                    error.message ||
+                    "Gagal mengunggah bukti pembayaran",
+            );
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (loading) return <Spinner className="items-center" />;
+
+    if (errorMsg || !booking) {
+        return (
+            <div className="p-4 max-w-6xl mx-auto space-y-4">
+                <p className="text-red-500">
+                    Error: {errorMsg || "Booking tidak ditemukan"}
+                </p>
+            </div>
+        );
+    }
 
     return (
-        <div className="px-4 py-4 max-w-6xl mx-auto space-y-4">
-            <Breadcrumb>
-                <BreadcrumbList>
-                    <BreadcrumbItem>
-                        <BreadcrumbLink href="/user">Dashboard</BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                        <BreadcrumbLink href="/user/bookings">
-                            Booking
-                        </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbPage>Pembayaran</BreadcrumbPage>
-                </BreadcrumbList>
-            </Breadcrumb>
-
+        <div className="px-4 py-4 max-w-7xl mx-auto space-y-4">
             <div className="flex items-center justify-between">
                 <h1 className="text-lg sm:text-xl font-semibold">
                     Pembayaran Booking
                 </h1>
                 <Badge className="bg-emerald-50 text-emerald-900">
-                    ID {bookingId}
+                    ID {bookingId.slice(0, 8).toUpperCase()}
                 </Badge>
             </div>
 
             <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-4">
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Form Pembayaran</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {!profileValid && (
-                            <Alert variant="destructive">
-                                <AlertTriangleIcon />
-                                <AlertTitle>Lengkapi Data Profil</AlertTitle>
-                                <AlertDescription>
-                                    Lengkapi status kawin dan unggah dokumen:
-                                    Foto KTP serta Buku Nikah (jika status kawin
-                                    = menikah). Setelah lengkap, Anda dapat
-                                    melanjutkan proses pembayaran.
-                                </AlertDescription>
-                            </Alert>
-                        )}
+                    <form onSubmit={onSubmit}>
+                        <CardHeader>
+                            <CardTitle>Form Pembayaran</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <FieldSet>
+                                <FieldGroup>
+                                    <Field orientation="responsive">
+                                        <FieldLabel className="flex flex-col items-start">
+                                            <FieldTitle>
+                                                Tipe Pembayaran
+                                            </FieldTitle>
+                                            <FieldDescription>
+                                                Pilih DP dulu atau Bayar Lunas
+                                            </FieldDescription>
+                                        </FieldLabel>
+                                        <FieldContent>
+                                            <Select
+                                                value={payType}
+                                                onValueChange={(v) => {
+                                                    setPayType(
+                                                        v as "dp" | "lunas",
+                                                    );
+                                                    if (v === "lunas")
+                                                        setDpAmount(total);
+                                                }}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="lunas">
+                                                        Bayar Lunas
+                                                    </SelectItem>
+                                                    <SelectItem value="dp">
+                                                        DP
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </FieldContent>
+                                    </Field>
 
-                        <FieldSet>
-                            <FieldGroup>
-                                <Field orientation="responsive">
-                                    <FieldLabel>
-                                        <FieldTitle>Tipe Pembayaran</FieldTitle>
-                                        <FieldDescription>
-                                            Pilih DP dulu atau Bayar Lunas
-                                        </FieldDescription>
-                                    </FieldLabel>
-                                    <FieldContent>
-                                        <Select
-                                            value={payType}
-                                            onValueChange={(v) =>
-                                                setPayType(v as "dp" | "lunas")
-                                            }
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="dp">
-                                                    DP
-                                                </SelectItem>
-                                                <SelectItem value="lunas">
-                                                    Bayar Lunas
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </FieldContent>
-                                </Field>
+                                    {payType === "dp" && (
+                                        <Field orientation="responsive">
+                                            <FieldLabel className="flex flex-col items-start">
+                                                <FieldTitle>
+                                                    Nominal DP
+                                                </FieldTitle>
+                                                <FieldDescription>
+                                                    Masukkan jumlah DP yang
+                                                    dibayarkan
+                                                </FieldDescription>
+                                            </FieldLabel>
+                                            <FieldContent>
+                                                <Input
+                                                    type="number"
+                                                    min={0}
+                                                    max={total}
+                                                    value={
+                                                        dpAmount
+                                                            ? String(dpAmount)
+                                                            : ""
+                                                    }
+                                                    onChange={(e) =>
+                                                        setDpAmount(
+                                                            Number(
+                                                                e.target
+                                                                    .value || 0,
+                                                            ),
+                                                        )
+                                                    }
+                                                    placeholder="Contoh: 500000"
+                                                />
+                                            </FieldContent>
+                                        </Field>
+                                    )}
 
-                                <Field orientation="responsive">
-                                    <FieldLabel>
-                                        <FieldTitle>Durasi Sewa</FieldTitle>
-                                        <FieldDescription>
-                                            Berapa lama menyewa kamar
-                                        </FieldDescription>
-                                    </FieldLabel>
-                                    <FieldContent>
-                                        <Select
-                                            value={String(months)}
-                                            onValueChange={(v) =>
-                                                setMonths(Number(v))
-                                            }
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {Array.from({ length: 12 }).map(
-                                                    (_, i) => (
-                                                        <SelectItem
-                                                            key={i + 1}
-                                                            value={`${i + 1}`}
-                                                        >
-                                                            {i + 1} Bulan
-                                                        </SelectItem>
-                                                    ),
+                                    <FieldSeparator />
+
+                                    <Field orientation="responsive">
+                                        <FieldLabel className="flex flex-col items-start">
+                                            <FieldTitle>
+                                                Metode Pembayaran
+                                            </FieldTitle>
+                                            <FieldDescription>
+                                                Transfer atau Cash
+                                            </FieldDescription>
+                                        </FieldLabel>
+                                        <FieldContent>
+                                            <Select
+                                                value={method}
+                                                onValueChange={(v) =>
+                                                    setMethod(
+                                                        v as
+                                                            | "transfer"
+                                                            | "cash",
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="transfer">
+                                                        Transfer Bank
+                                                    </SelectItem>
+                                                    <SelectItem value="cash">
+                                                        Tunai (Cash)
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </FieldContent>
+                                    </Field>
+
+                                    {method === "transfer" && (
+                                        <div className="bg-muted p-4 rounded-md flex items-start gap-4">
+                                            <div className="bg-white p-2 rounded-md shrink-0">
+                                                <Image
+                                                    src={BANK_DETAILS.logoUrl}
+                                                    alt="BCA Logo"
+                                                    width={60}
+                                                    height={30}
+                                                    className="object-contain h-8 w-auto"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-semibold">
+                                                    {BANK_DETAILS.bankName}
+                                                </p>
+                                                <p className="text-lg font-bold tracking-widest">
+                                                    {BANK_DETAILS.accountNumber}
+                                                </p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    a.n.{" "}
+                                                    {BANK_DETAILS.accountName}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <Field orientation="responsive">
+                                        <FieldLabel className="flex flex-col items-start">
+                                            <FieldTitle>
+                                                Bukti Pembayaran
+                                            </FieldTitle>
+                                            <FieldDescription>
+                                                Unggah foto struk/bukti transfer
+                                                (JPG, PNG)
+                                            </FieldDescription>
+                                        </FieldLabel>
+                                        <FieldContent>
+                                            <div className="flex flex-col gap-2">
+                                                <Input
+                                                    type="file"
+                                                    accept="image/png, image/jpeg, image/jpg"
+                                                    onChange={handleFileChange}
+                                                    required
+                                                />
+                                                {file && (
+                                                    <p className="text-xs text-muted-foreground">
+                                                        File: {file.name}
+                                                    </p>
                                                 )}
-                                            </SelectContent>
-                                        </Select>
-                                    </FieldContent>
-                                </Field>
+                                            </div>
+                                        </FieldContent>
+                                    </Field>
+                                </FieldGroup>
+                            </FieldSet>
 
-                                <Field orientation="responsive">
-                                    <FieldLabel>
-                                        <FieldTitle>Rencana Masuk</FieldTitle>
-                                        <FieldDescription>
-                                            Tanggal mulai menempati kamar
-                                        </FieldDescription>
-                                    </FieldLabel>
-                                    <FieldContent>
-                                        <Input
-                                            type="date"
-                                            value={planDate}
-                                            onChange={(e) =>
-                                                setPlanDate(e.target.value)
-                                            }
-                                        />
-                                    </FieldContent>
-                                </Field>
-
-                                <FieldSeparator />
-
-                                <Field orientation="responsive">
-                                    <FieldLabel>
-                                        <FieldTitle>
-                                            Metode Pembayaran
-                                        </FieldTitle>
-                                        <FieldDescription>
-                                            Manual transfer atau cash
-                                        </FieldDescription>
-                                    </FieldLabel>
-                                    <FieldContent>
-                                        <Select
-                                            value={method}
-                                            onValueChange={(v) =>
-                                                setMethod(
-                                                    v as "transfer" | "cash",
-                                                )
-                                            }
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="transfer">
-                                                    Manual Transfer
-                                                </SelectItem>
-                                                <SelectItem value="cash">
-                                                    Cash
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </FieldContent>
-                                </Field>
-
-                                <Field orientation="responsive">
-                                    <FieldLabel>
-                                        <FieldTitle>Nominal DP</FieldTitle>
-                                        <FieldDescription>
-                                            Isi jika memilih DP
-                                        </FieldDescription>
-                                    </FieldLabel>
-                                    <FieldContent>
-                                        <Input
-                                            type="number"
-                                            min={0}
-                                            max={total}
-                                            value={
-                                                dpAmount ? String(dpAmount) : ""
-                                            }
-                                            onChange={(e) =>
-                                                setDpAmount(
-                                                    Number(e.target.value || 0),
-                                                )
-                                            }
-                                            placeholder="Contoh: 500000"
-                                        />
-                                    </FieldContent>
-                                </Field>
-                            </FieldGroup>
-                        </FieldSet>
-
-                        <div className="grid sm:grid-cols-2 gap-3">
-                            <Card className="shadow-none">
-                                <CardContent className="py-3">
-                                    <div className="flex items-center gap-2">
-                                        <InfoIcon className="text-emerald-700" />
-                                        <p className="text-sm text-muted-foreground">
-                                            Total {months} bulan
+                            <div className="grid sm:grid-cols-2 gap-3">
+                                <Card className="shadow-none">
+                                    <CardContent className="py-3">
+                                        <div className="flex items-center gap-2">
+                                            <InfoIcon
+                                                className="text-emerald-700"
+                                                size={16}
+                                            />
+                                            <p className="text-sm text-muted-foreground">
+                                                Total Biaya
+                                            </p>
+                                        </div>
+                                        <p className="text-xl font-bold">
+                                            {formatRupiah(total)}
                                         </p>
-                                    </div>
-                                    <p className="text-xl font-bold">
-                                        {formatIDR(total)}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                            <Card className="shadow-none">
-                                <CardContent className="py-3">
-                                    <div className="flex items-center gap-2">
-                                        <CreditCardIcon className="text-primary" />
-                                        <p className="text-sm text-muted-foreground">
-                                            Dibayar Sekarang
+                                    </CardContent>
+                                </Card>
+                                <Card className="shadow-none">
+                                    <CardContent className="py-3">
+                                        <div className="flex items-center gap-2">
+                                            <CreditCardIcon
+                                                className="text-primary"
+                                                size={16}
+                                            />
+                                            <p className="text-sm text-muted-foreground">
+                                                Dibayar Sekarang
+                                            </p>
+                                        </div>
+                                        <p className="text-xl font-bold">
+                                            {formatRupiah(dueNow)}
                                         </p>
-                                    </div>
-                                    <p className="text-xl font-bold">
-                                        {formatIDR(dueNow)}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
 
-                        <div className="flex flex-col gap-2">
-                            <Button
-                                disabled={!profileValid || !planDate}
-                                className="w-full rounded-full"
-                            >
-                                <CreditCardIcon className="mr-2" /> Konfirmasi &
-                                Bayar
-                            </Button>
-                            {!profileValid && (
-                                <p className="text-xs text-muted-foreground text-center">
-                                    Lengkapi profil terlebih dahulu untuk
-                                    melanjutkan. Buka halaman Profil.
-                                </p>
-                            )}
-                        </div>
-                    </CardContent>
+                            <div className="flex flex-col gap-2">
+                                <Button
+                                    type="submit"
+                                    disabled={!file || isSubmitting}
+                                    className="w-full rounded-full"
+                                >
+                                    {isSubmitting ? (
+                                        <Loader2Icon className="mr-2 animate-spin" />
+                                    ) : (
+                                        <UploadIcon className="mr-2" />
+                                    )}
+                                    Kirim Bukti Pembayaran
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </form>
                 </Card>
 
                 <Card>
@@ -329,28 +399,32 @@ function BookingPaymentPage() {
                                 <p className="text-sm text-muted-foreground">
                                     Kamar
                                 </p>
-                                <p className="font-medium">{roomId || "-"}</p>
+                                <p className="font-medium">
+                                    {booking.room?.roomNumber || "-"}
+                                </p>
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">
                                     Lantai
                                 </p>
-                                <p className="font-medium">{floor || "-"}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground">
-                                    Ukuran
-                                </p>
                                 <p className="font-medium">
-                                    {size ? `${size}m²` : "-"}
+                                    {booking.room?.floor || "-"}
                                 </p>
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">
-                                    Harga/Bulan
+                                    Durasi
                                 </p>
                                 <p className="font-medium">
-                                    {price ? formatIDR(price) : "-"}
+                                    {booking.duration} {booking.rentType}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">
+                                    Status
+                                </p>
+                                <p className="font-medium capitalize">
+                                    {booking.status.replace("_", " ")}
                                 </p>
                             </div>
                         </div>
@@ -358,25 +432,27 @@ function BookingPaymentPage() {
                             <div className="flex items-center justify-between">
                                 <p className="text-sm">Total</p>
                                 <p className="text-lg font-semibold">
-                                    {formatIDR(total)}
+                                    {formatRupiah(total)}
                                 </p>
                             </div>
                             <div className="flex items-center justify-between">
                                 <p className="text-sm">Bayar Sekarang</p>
                                 <p className="text-lg font-semibold">
-                                    {formatIDR(dueNow)}
+                                    {formatRupiah(dueNow)}
                                 </p>
                             </div>
                             <div className="flex items-center justify-between">
                                 <p className="text-sm">Sisa</p>
-                                <p className="text-lg font-semibold">
-                                    {formatIDR(dueLater)}
+                                <p className="text-lg font-semibold text-muted-foreground">
+                                    {formatRupiah(dueLater)}
                                 </p>
                             </div>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                            Dengan melanjutkan, Anda menyetujui syarat dan
-                            ketentuan yang berlaku.
+                            Invoice ID:{" "}
+                            {booking.invoices?.[0]?.id
+                                .slice(0, 8)
+                                .toUpperCase() || "-"}
                         </div>
                     </CardContent>
                 </Card>
