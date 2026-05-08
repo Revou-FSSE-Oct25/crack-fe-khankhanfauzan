@@ -1,6 +1,7 @@
 import { http } from "@/lib/http/client";
-import { LandingPageResponse } from "@/types/landing-page";
+import { LandingPageData } from "@/types/landing-page";
+import { ApiResponse } from "@/types/types";
 
 export async function fetchLandingPageSummary() {
-    return http.get<LandingPageResponse>('/public/landing-page');
+    return http.get<ApiResponse<LandingPageData>>('/public/landing-page');
 }

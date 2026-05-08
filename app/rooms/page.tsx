@@ -2,27 +2,32 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RoomsLegend } from "@/components/rooms/RoomsLegend";
 import { RoomDetailsCard } from "@/components/rooms/RoomDetailsCard";
 import { RoomTile } from "@/components/rooms/RoomTile";
-import { ArrowLeftIcon, InfoIcon } from "lucide-react";
+import { ArrowLeftIcon, InfoIcon, LayoutGridIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { fetchRooms } from "@/services/rooms";
-import type { RoomsResponse, Room, RoomStatus } from "@/types/rooms";
+import type { Room, GetRoomsParams, RoomMeta } from "@/types/rooms";
+import { ApiPaginatedResponse } from "@/types/types";
 
 function RoomsPage() {
     const [selected, setSelected] = useState<Room | undefined>(undefined);
-    const isGuest = false;
+    const [roomsResponse, setRoomsResponse] =
+        useState<ApiPaginatedResponse<Room[], RoomMeta>>();
+    const [filters, setFilters] = useState<GetRoomsParams>({
+        page: 1,
+        perPage: 50,
+    });
 
     const router = useRouter();
-
-    const [roomsResponse, setRoomsResponse] = useState<RoomsResponse>();
+    const isGuest = false;
 
     useEffect(() => {
-        fetchRooms()
+        fetchRooms(filters)
             .then(setRoomsResponse)
             .catch((e) => {
                 console.log(e);
@@ -35,16 +40,43 @@ function RoomsPage() {
 
     const selectedApi: Room | undefined = selected;
 
-    const floors = useMemo(() => {
-        const groups: Record<number, Room[]> = {};
-        uiRooms.forEach((r) => {
-            groups[r.floor] ??= [];
-            groups[r.floor].push(r);
+    const roomGroups = useMemo(() => {
+        // const groups: Record<number, Room[]> = {};
+        // uiRooms.forEach((r) => {
+        //     groups[r.floor] ??= [];
+        //     groups[r.floor].push(r);
+        // });
+        // return Object.entries(groups)
+        //     .sort((a, b) => Number(a[0]) - Number(b[0]))
+        //     .map(([floor, items]) => ({ floor: Number(floor), items }));
+
+        const groups: Record<string, Record<number, Room[]>> = {};
+
+        uiRooms.forEach((room) => {
+            const type = room.roomType;
+            if (!groups[type]) groups[type] = {};
+
+            if (!groups[type][room.floor]) {
+                groups[type][room.floor] = [];
+            }
+
+            groups[type][room.floor].push(room);
         });
-        return Object.entries(groups)
-            .sort((a, b) => Number(a[0]) - Number(b[0]))
-            .map(([floor, items]) => ({ floor: Number(floor), items }));
+
+        return Object.entries(groups).map(([typeName, floorsObj]) => ({
+            typeName,
+            floors: Object.entries(floorsObj)
+                .sort((a, b) => Number(a[0]) - Number(b[0]))
+                .map(([floor, items]) => ({
+                    floor: Number(floor),
+                    items: items.sort((a, b) =>
+                        a.roomNumber.localeCompare(b.roomNumber),
+                    ),
+                })),
+        }));
     }, [uiRooms]);
+
+    console.log(roomGroups);
 
     return (
         <div className="px-4 py-4 max-w-7xl mx-auto">
@@ -108,12 +140,52 @@ function RoomsPage() {
                     </Alert>
 
                     <Card className="shadow-none">
+                        <CardContent>
+                            <RoomsLegend />
+                        </CardContent>
+                    </Card>
+
+                    {roomGroups.map((group) => (
+                        <Card key={group.typeName} className="shadow-none">
+                            <CardHeader>
+                                <h2 className="text-lg font-bold uppercase tracking-tight text-secondary-foreground border-b pb-2">
+                                    {group.typeName}
+                                </h2>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {group.floors.map(({ floor, items }) => (
+                                    <div key={floor} className="space-y-2">
+                                        <div className="flex gap-4 items-center">
+                                            <p className="font-semibold">
+                                                Lantai {floor}
+                                            </p>
+                                        </div>
+                                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                                            {items.map((room) => (
+                                                <RoomTile
+                                                    key={
+                                                        room.roomNumber ??
+                                                        String(room.id)
+                                                    }
+                                                    room={room}
+                                                    selected={
+                                                        selected?.roomNumber ===
+                                                        room.roomNumber
+                                                    }
+                                                    onSelect={(r) =>
+                                                        setSelected(r)
+                                                    }
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    ))}
+
+                    {/* <Card className="shadow-none">
                         <CardContent className="py-4 px-4">
-                            <Card className="shadow-none py-3 mb-4">
-                                <CardContent className="px-3">
-                                    <RoomsLegend />
-                                </CardContent>
-                            </Card>
                             <div className="space-y-6">
                                 {floors.map(({ floor, items }) => (
                                     <div key={floor} className="space-y-2">
@@ -145,7 +217,7 @@ function RoomsPage() {
                                 ))}
                             </div>
                         </CardContent>
-                    </Card>
+                    </Card> */}
                 </div>
 
                 <RoomDetailsCard
@@ -154,9 +226,10 @@ function RoomsPage() {
                     onBook={(room) => {
                         const bookingId = `BK-${room.roomNumber}-${Date.now()}`;
                         const size = room.dimensions?.area ?? 12;
-                        router.push(
-                            `/user/bookings/${bookingId}/payment?roomId=${room.roomNumber}&price=${room.price}&size=${size}&floor=${room.floor}`,
-                        );
+                        // router.push(
+                        //     `/user/bookings/${bookingId}/payment?roomId=${room.roomNumber}&price=${room.price}&size=${size}&floor=${room.floor}`,
+                        // );
+                        router.push(`/user/bookings/create?roomId=${room.id}`);
                     }}
                 />
             </div>

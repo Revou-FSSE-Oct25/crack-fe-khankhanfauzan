@@ -1,8 +1,9 @@
 import { RoomType } from "./rooms";
 
+// Hanya menyimpan Data Model, tidak perlu 'LandingPageResponse' lagi
 export type LandingPageCheapestRoom = {
     priceMonthly: string;
-    roomType: RoomType;
+    roomType: string;
     length: string;
     width: string;
     unit: string;
@@ -14,12 +15,8 @@ export type LandingpageFacility = {
 }
 
 export type LandingPageReviewStats = {
-    _avg: {
-        rating: number | null;
-    }
-    _count: {
-        id: number;
-    }
+    _avg: { rating: number | null; }
+    _count: { id: number; }
 }
 
 export type LandingPageFeaturedReview = {
@@ -27,9 +24,7 @@ export type LandingPageFeaturedReview = {
     comment: string | null;
     booking: {
         tenant: {
-            profile: {
-                fullName: string | null;
-            } | null;
+            profile: { fullName: string | null; } | null;
         } | null;
     } | null;
 }
@@ -39,10 +34,4 @@ export type LandingPageData = {
     facilities: LandingpageFacility[];
     reviewStats: LandingPageReviewStats;
     featuredReviews: LandingPageFeaturedReview[];
-}
-
-export type LandingPageResponse = {
-    status: number;
-    message: string;
-    data: LandingPageData;
 }

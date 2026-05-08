@@ -1,55 +1,53 @@
-export type UsersResponseMeta = {
-    current_page: number;
-    last_page: number;
-    limit: number;
-    total_data: number;
-    has_next_page: boolean;
-    has_prev_page: boolean;
-};
+import { PaginationParams } from "./common";
 
 export type UserProfile = {
-    avatarUrl: string | null;
+    fullName: string;
+    whatsappNumber: string;
+    maritalStatus: "single" | "married" | string | null; // Menyesuaikan respons BE yang bisa null
     joinedAt: string;
 };
 
-export type UserDocuments = {
-    ktpUrl: string;
-    marriageUrl?: string;
+export type UserDocument = {
+    fotoProfileUrl: string | null;
+    fotoKtpUrl: string | null;
+    fotoBukuNikahUrl: string | null;
 };
 
-export type UserCurrentStay = {
-    roomNumber: string;
-    propertyName?: string;
-    status: "active" | "inactive" | "verifying" | string;
+export type UserVerifiedStats = {
+    isEmailVerified: boolean;
+    isProfileVerified: boolean;
+    isKtpVerified: boolean;
+    isMarriageVerified: boolean;
 };
 
 export type User = {
     id: string;
-    fullName: string;
     email: string;
-    whatsappNumber?: string;
-    role: "tenant" | string;
-    maritalStatus?: "single" | "married" | string;
-    profile?: UserProfile;
-    documents?: UserDocuments;
-    currentStay?: UserCurrentStay | null;
-};
-
-export type UsersResponse = {
-    status: "success" | "error" | string;
-    message: string;
-    meta: UsersResponseMeta;
-    data: User[];
+    role: "tenant" | "admin" | string;
+    profile: UserProfile;
+    document: UserDocument;
+    verified: UserVerifiedStats;
 };
 
 export type UpdateUserPayload = Partial<
-    Pick<User, "fullName" | "email" | "whatsappNumber" | "role" | "maritalStatus">
+    Pick<User, "email" | "role"> & {
+        fullName: string;
+        whatsappNumber: string;
+        maritalStatus: string;
+        fotoProfileUrl: string | null;
+        ktpUrl: string | null;
+        marriageUrl: string | null;
+    }
 >;
 
 export type CreateUserPayload = {
-    fullname: string;
+    fullName: string;
     email: string;
     whatsappNumber?: string;
     role: string;
     maritalStatus?: string;
 };
+
+export interface GetUsersParams extends PaginationParams {
+    role?: string;
+}

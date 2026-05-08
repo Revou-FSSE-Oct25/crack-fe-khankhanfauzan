@@ -4,15 +4,9 @@ export type Facility = {
     description?: string | null;
 }
 
-export type FacilitiesResponse = {
-    status: number,
-    message: string,
-    data: Facility[],
-}
-
 export type CreateFacilityPayload = {
-    name: string,
+    name: string;
     description?: string | null;
 }
 
-export type UpdateFacilityPayload = Partial<CreateFacilityPayload>
+export type UpdateFacilityPayload = Partial<CreateFacilityPayload>;

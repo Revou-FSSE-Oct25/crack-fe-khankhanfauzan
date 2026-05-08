@@ -101,12 +101,13 @@ export default function Page() {
                 if (!mounted) return;
                 setDetail(data);
                 reset({
-                    fullname: data?.fullName ?? "",
+                    fullname: data?.profile?.fullName ?? "",
                     email: data?.email ?? "",
-                    whatsappNumber: data?.whatsappNumber ?? "",
+                    whatsappNumber: data?.profile?.whatsappNumber ?? "",
                     marital_status:
-                        (data?.maritalStatus as "single" | "married") ??
-                        "single",
+                        (data?.profile?.maritalStatus as
+                            | "single"
+                            | "married") ?? "single",
                     address: "",
                     ktp: "",
                     marriage: "",
@@ -183,16 +184,17 @@ export default function Page() {
                                     <Avatar size="lg">
                                         <AvatarImage
                                             src={
-                                                detail.profile?.avatarUrl ??
+                                                detail.document
+                                                    ?.fotoProfileUrl ??
                                                 undefined
                                             }
-                                            alt={detail.fullName}
+                                            alt={detail.profile?.fullName}
                                         />
                                         <AvatarFallback>U</AvatarFallback>
                                     </Avatar>
                                     <div>
                                         <div className="font-semibold">
-                                            {detail.fullName}
+                                            {detail.profile?.fullName}
                                         </div>
                                         <div className="text-muted-foreground text-sm">
                                             {detail.email}
@@ -360,11 +362,12 @@ export default function Page() {
                                         </div>
                                         <div className="text-sm">
                                             KTP:{" "}
-                                            {detail.documents?.ktpUrl ? (
+                                            {detail.document?.fotoKtpUrl ? (
                                                 <a
                                                     className="underline"
                                                     href={
-                                                        detail.documents.ktpUrl
+                                                        detail.document
+                                                            .fotoKtpUrl
                                                     }
                                                     target="_blank"
                                                     rel="noreferrer"
@@ -377,12 +380,13 @@ export default function Page() {
                                         </div>
                                         <div className="text-sm">
                                             Buku Nikah:{" "}
-                                            {detail.documents?.marriageUrl ? (
+                                            {detail.document
+                                                ?.fotoBukuNikahUrl ? (
                                                 <a
                                                     className="underline"
                                                     href={
-                                                        detail.documents
-                                                            .marriageUrl
+                                                        detail.document
+                                                            .fotoBukuNikahUrl
                                                     }
                                                     target="_blank"
                                                     rel="noreferrer"
@@ -397,7 +401,9 @@ export default function Page() {
                                             Status Verifikasi:{" "}
                                         </div>
                                     </div>
-                                    <div className="flex flex-col gap-1">
+
+                                    {/* TODO: IMPORTANT */}
+                                    {/* <div className="flex flex-col gap-1">
                                         <div className="text-sm font-medium">
                                             Hunian Saat Ini
                                         </div>
@@ -415,7 +421,7 @@ export default function Page() {
                                             Status:{" "}
                                             {detail.currentStay?.status || "-"}
                                         </div>
-                                    </div>
+                                    </div> */}
                                 </div>
                             </div>
                         )}
