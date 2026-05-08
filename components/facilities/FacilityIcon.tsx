@@ -10,7 +10,7 @@ import {
     ZapIcon,
 } from "lucide-react";
 
-const iconMap: Record<string, React.ElementType> = {
+export const iconMap: Record<string, React.ElementType> = {
     WiFi: WifiIcon,
     AirVent: AirVentIcon,
     ShowerHead: ShowerHeadIcon,

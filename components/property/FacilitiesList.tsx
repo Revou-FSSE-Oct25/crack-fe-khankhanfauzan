@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import * as React from "react";
 
 type FacilityItem = {
-    icon: LucideIcon;
+    icon: React.ElementType | LucideIcon;
     label: string;
 };
 
