@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import {
     Pagination,
@@ -26,6 +26,10 @@ import { FilterBar } from "@/components/filters/FilterBar";
 import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { fetchBookings } from "@/services/bookings";
+import { getSession } from "@/actions/auth";
+import { Booking } from "@/types/bookings";
+import { formatDate, formatRupiah } from "@/utils/format";
 
 function Page() {
     const [search, setSearch] = React.useState("");
@@ -78,6 +82,22 @@ function Page() {
     function formatAmount(n: number) {
         return `Rp ${n.toLocaleString("id-ID")}`;
     }
+
+    const [booking, setBooking] = useState<Booking[] | null>(null);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+
+    useEffect(() => {
+        const session = getSession();
+        const token = session?.accessToken;
+
+        fetchBookings({}, { token: token })
+            .then((value) => setBooking(value.data))
+            .catch((e) => setErrorMsg(e.message))
+            .finally(() => setLoading(false));
+
+        console.log(booking, "booking");
+    }, []);
 
     return (
         <div className="p-4 flex flex-col gap-6">
@@ -140,7 +160,7 @@ function Page() {
                 }}
             />
             <div className="flex flex-col gap-4">
-                {pageItems.map((b) => {
+                {/* {pageItems.map((b) => {
                     const isMonthly = b.period.rent_type === "monthly";
                     const durLabel = isMonthly
                         ? `${b.period.duration} Bulan`
@@ -182,7 +202,50 @@ function Page() {
                             }
                         />
                     );
+                })} */}
+
+                {booking?.map((value) => {
+                    return (
+                        <BookingRow
+                            key={value.id}
+                            roomLabel={`Kamar ${value.room?.roomNumber}`}
+                            floorLabel={`Lt. ${value.room?.floor}`}
+                            bookingIdLabel={value.id}
+                            startDateLabel={formatDate(value.startDate, {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                            })}
+                            endDateLabel={formatDate(value.endDate, {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                            })}
+                            durationLabel={`${value.duration}`}
+                            priceLabel={formatRupiah(value.pricePerUnit)}
+                            amountLabel={formatRupiah(value.totalPrice)}
+                            status={
+                                value.status === "completed"
+                                    ? "completed"
+                                    : value.status === "cancelled"
+                                      ? "cancelled"
+                                      : value.status === "confirmed"
+                                        ? "confirmed"
+                                        : "pending_payment"
+                            }
+                            actionLabel={
+                                value.status === "cancelled"
+                                    ? undefined
+                                    : value.status === "completed"
+                                      ? undefined
+                                      : value.status === "confirmed"
+                                        ? undefined
+                                        : "Bayar"
+                            }
+                        />
+                    );
                 })}
+
                 <Pagination className="mt-2">
                     <PaginationContent>
                         <PaginationItem>

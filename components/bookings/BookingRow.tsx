@@ -11,26 +11,56 @@ import {
     HomeIcon,
     type LucideIcon,
     FileTextIcon,
+    CheckCircleIcon,
+    AlertCircleIcon,
 } from "lucide-react";
 
-type Status = "completed" | "cancelled" | "expired";
+export type Status =
+    | "completed"
+    | "cancelled"
+    | "expired"
+    | "confirmed"
+    | "pending_payment";
 
 const badgeClassByStatus: Record<Status, string> = {
     completed: "bg-blue-50 border-blue-200 text-blue-900",
-    cancelled: "bg-amber-50 border-amber-200 text-amber-900",
+    cancelled: "bg-red-50 border-red-200 text-red-900",
     expired: "bg-gray-50 border-gray-200 text-gray-900",
+    confirmed: "bg-green-50 border-green-200 text-green-900",
+    pending_payment: "bg-amber-50 border-amber-200 text-amber-900",
 };
 
 const badgeIconByStatus: Record<Status, LucideIcon> = {
     completed: CircleCheckBigIcon,
-    cancelled: ClockIcon,
-    expired: XCircleIcon,
+    cancelled: XCircleIcon,
+    expired: ClockIcon,
+    confirmed: CheckCircleIcon,
+    pending_payment: AlertCircleIcon,
 };
 
 const badgeIconColorByStatus: Record<Status, string> = {
     completed: "oklch(62.3% 0.214 259.815)",
-    cancelled: "orange",
+    cancelled: "red",
     expired: "gray",
+    confirmed: "green",
+    pending_payment: "orange",
+};
+
+const formatStatusLabel = (status: Status) => {
+    switch (status) {
+        case "pending_payment":
+            return "Menunggu Pembayaran";
+        case "completed":
+            return "Selesai";
+        case "cancelled":
+            return "Dibatalkan";
+        case "expired":
+            return "Kedaluwarsa";
+        case "confirmed":
+            return "Dikonfirmasi";
+        default:
+            return status;
+    }
 };
 
 function BookingRow({
@@ -45,7 +75,6 @@ function BookingRow({
     priceLabel,
     amountLabel,
     status,
-    statusLabel,
     showDetailButton = true,
     actionLabel,
     onAction,
@@ -61,7 +90,6 @@ function BookingRow({
     priceLabel: string;
     amountLabel: string;
     status: Status;
-    statusLabel?: string;
     showDetailButton?: boolean;
     actionLabel?: string;
     onAction?: () => void;
@@ -142,9 +170,12 @@ function BookingRow({
                         </p>
                         <p className="font-bold text-lg">{amountLabel}</p>
                         <Badge variant="secondary" className={badgeClass}>
-                            <BadgeIcon color={badgeIconColor} />{" "}
-                            {statusLabel ??
-                                status[0].toUpperCase() + status.slice(1)}
+                            <BadgeIcon
+                                color={badgeIconColor}
+                                size={14}
+                                className="mr-1"
+                            />
+                            {formatStatusLabel(status)}
                         </Badge>
                     </div>
 

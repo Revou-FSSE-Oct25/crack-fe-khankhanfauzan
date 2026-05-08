@@ -11,22 +11,15 @@ import { LandingPageData } from "@/types/landing-page";
 import { formatRupiah } from "@/utils/format";
 import { getInitials } from "@/utils/strings";
 import {
-    BathIcon,
     BedDoubleIcon,
-    BedIcon,
     CalendarIcon,
     ClockIcon,
-    Columns2Icon,
-    CookingPotIcon,
     HomeIcon,
-    LampDeskIcon,
     MaximizeIcon,
     ShieldIcon,
     StarIcon,
     UsersIcon,
     UsersRoundIcon,
-    WifiIcon,
-    WindIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";

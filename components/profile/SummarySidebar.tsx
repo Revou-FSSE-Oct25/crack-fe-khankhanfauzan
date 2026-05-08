@@ -15,6 +15,8 @@ import Link from "next/link";
 import type { User } from "@/types/users";
 import { updateProfile } from "@/services/users";
 import { getSession } from "@/actions/auth";
+import { TenantDashboardData } from "@/types/tenant-dashboard";
+import { formatRupiah } from "@/utils/format";
 
 function initials(name?: string) {
     const n = (name || "").trim();
@@ -25,11 +27,17 @@ function initials(name?: string) {
     return (first + last).toUpperCase();
 }
 
-export function SummarySidebar({ user }: { user: User | null }) {
+export function SummarySidebar({
+    user,
+    tenantDashboard,
+}: {
+    user: User | null;
+    tenantDashboard: TenantDashboardData | null;
+}) {
     const name = user?.profile?.fullName || "Pengguna";
     const email = user?.email || "";
     const role = user?.role === "tenant" ? "Penghuni" : user?.role || "";
-    const room = (user as any)?.currentStay?.roomNumber || "-";
+    const room = tenantDashboard?.activeBooking?.room.roomNumber || "-";
     const [avatarUrl, setAvatarUrl] = useState(
         user?.document?.fotoProfileUrl || undefined,
     );
@@ -124,7 +132,7 @@ export function SummarySidebar({ user }: { user: User | null }) {
                     <div className="flex justify-evenly w-full">
                         <div>
                             <p className="text-xl sm:text-2xl font-semibold">
-                                12
+                                {tenantDashboard?.stayInfo?.contractDuration}
                             </p>
                             <p className="text-xs text-muted-foreground">
                                 Bulan
@@ -132,7 +140,10 @@ export function SummarySidebar({ user }: { user: User | null }) {
                         </div>
                         <div>
                             <p className="text-xl sm:text-2xl font-semibold">
-                                18M
+                                {formatRupiah(
+                                    tenantDashboard?.activeBooking?.totalPrice,
+                                    { notation: "compact" },
+                                )}
                             </p>
                             <p className="text-xs text-muted-foreground">
                                 Total Bayar

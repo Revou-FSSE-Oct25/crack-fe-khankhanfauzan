@@ -1,4 +1,4 @@
-export type BookingStatus = "completed" | "cancelled" | "expired";
+export type BookingStatus = "completed" | "cancelled" | "confirmed" | "pending_payment";
 
 export type BookingRoom = {
     room_id: string;
@@ -85,7 +85,7 @@ export const MOCK_BOOKING_HISTORY: BookingHistoryResponse = {
                 rent_type: "monthly",
                 duration: 6,
             },
-            status: "expired",
+            status: "cancelled",
             total_paid: 18000000,
             checkout_at: "2026-09-01T10:00:00Z",
         },
@@ -111,7 +111,7 @@ export const MOCK_BOOKING_HISTORY: BookingHistoryResponse = {
                 rent_type: "monthly",
                 duration: 6,
             },
-            status: "expired",
+            status: "cancelled",
             total_paid: 9000000,
             checkout_at: "2026-03-10T08:00:00Z",
         },
@@ -150,7 +150,7 @@ export const MOCK_BOOKING_HISTORY: BookingHistoryResponse = {
                 rent_type: "monthly",
                 duration: 10,
             },
-            status: "expired",
+            status: "cancelled",
             total_paid: 30000000,
             checkout_at: "2026-12-01T09:00:00Z",
         },

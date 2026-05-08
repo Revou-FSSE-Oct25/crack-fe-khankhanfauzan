@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { getMe } from "@/services/auth";
 import type { User } from "@/types/users";
 import { ProfileClient } from "@/components/profile/ProfileClient";
+import { fetchTenantDashboard } from "@/services/dashboard";
+import { TenantDashboardData } from "@/types/tenant-dashboard";
 
 export const metadata: Metadata = {
     title: "Profil Pengguna",
@@ -28,7 +30,27 @@ async function fetchUserFromCookie(): Promise<User | null> {
     }
 }
 
+async function fetchTenantDashboardFromCookie(): Promise<TenantDashboardData | null> {
+    const store = await cookies();
+    const raw = store.get("session")?.value;
+    if (!raw) return null;
+    try {
+        const parsed = JSON.parse(decodeURIComponent(raw)) as {
+            accessToken?: string;
+        };
+        const token = parsed?.accessToken;
+        if (!token) return null;
+        const res = await fetchTenantDashboard({ token: token });
+
+        return res?.data ?? null;
+    } catch {
+        return null;
+    }
+}
+
 export default async function Page() {
     const user = await fetchUserFromCookie();
-    return <ProfileClient user={user} />;
+    const tenantDashboard = await fetchTenantDashboardFromCookie();
+
+    return <ProfileClient user={user} tenantDashboard={tenantDashboard} />;
 }

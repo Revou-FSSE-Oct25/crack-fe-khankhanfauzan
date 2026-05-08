@@ -8,7 +8,7 @@ import {
     CreditCardIcon,
     ReceiptIcon,
 } from "lucide-react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { DateRange } from "react-day-picker";
 import { IconSurface } from "@/components/ui/icon-surface";
 import { TransactionRow } from "@/components/transactions/TransactionRow";
@@ -23,6 +23,11 @@ import {
 } from "@/components/ui/pagination";
 import { MOCK_TRANSACTIONS, TxStatus } from "@/mocks/transactions";
 import { FilterBar } from "@/components/filters/FilterBar";
+import { Invoice } from "@/types/invoices";
+import { fetchInvoices } from "@/services/transactions";
+import { getSession } from "@/actions/auth";
+import { formatDate, formatRupiah } from "@/utils/format";
+import { BookingStatus } from "@/mocks/booking_history";
 
 function Page() {
     const [date, setDate] = React.useState<DateRange | undefined>({
@@ -65,6 +70,20 @@ function Page() {
     function formatAmount(n: number) {
         return `Rp ${n.toLocaleString("id-ID")}`;
     }
+
+    const [invoices, setInvoices] = useState<Invoice[] | null>(null);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+
+    useEffect(() => {
+        const session = getSession();
+        const token = session?.accessToken;
+
+        fetchInvoices({}, { token: token })
+            .then((value) => setInvoices(value.data))
+            .catch((e) => setErrorMsg(e.message))
+            .finally(() => setLoading(false));
+    }, []);
 
     return (
         <div className="p-4 flex flex-col gap-6">
@@ -164,7 +183,7 @@ function Page() {
                 }}
             />
             <div className="flex flex-col gap-4">
-                {pageItems.map((tx) => (
+                {/* {pageItems.map((tx) => (
                     <TransactionRow
                         key={tx.id}
                         iconBgClass={
@@ -208,7 +227,79 @@ function Page() {
                             tx.status === "pending" ? "Bayar" : undefined
                         }
                     />
-                ))}
+                ))} */}
+                {invoices?.map((invoice) => {
+                    const iconBg =
+                        invoice.booking.status === "confirmed"
+                            ? "bg-green-100"
+                            : invoice.booking.status === "pending_payment"
+                              ? "bg-amber-100"
+                              : invoice.booking.status === "cancelled"
+                                ? "bg-red-100"
+                                : "bg-gray-100";
+
+                    const iconColor =
+                        invoice.booking.status === "confirmed"
+                            ? "oklch(72.3% 0.219 149.579)"
+                            : invoice.booking.status === "pending_payment"
+                              ? "orange"
+                              : invoice.booking.status === "cancelled"
+                                ? "red"
+                                : "gray";
+
+                    const statusLabel =
+                        invoice.booking.status === "confirmed"
+                            ? "Dikonfirmasi"
+                            : invoice.booking.status === "pending_payment"
+                              ? "Pembayaran tertunda"
+                              : invoice.booking.status === "cancelled"
+                                ? "Dibatalkan"
+                                : "Selesai";
+
+                    /**
+                     * pending_payment
+                        confirmed
+                        cancelled
+                        completed
+                     * 
+                     */
+
+                    const actionLabel =
+                        invoice.booking.status === "pending_payment"
+                            ? "Bayar"
+                            : undefined;
+                    return (
+                        <TransactionRow
+                            key={invoice.id}
+                            iconBgClass={iconBg}
+                            iconColor={iconColor}
+                            trxId={invoice.id}
+                            bookingId={invoice.bookingId}
+                            methodLabel={
+                                invoice.transactions[0].paymentMethod || "-"
+                            }
+                            dueDateLabel={formatDate(invoice.dueDate, {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                            })}
+                            paidDateLabel={formatDate(
+                                invoice.transactions[0].paidAt,
+                                {
+                                    day: "numeric",
+                                    month: "long",
+                                    year: "numeric",
+                                },
+                            )}
+                            amountLabel={formatRupiah(
+                                invoice.transactions[0].amount,
+                            )}
+                            status={invoice.booking.status as BookingStatus}
+                            statusLabel={statusLabel}
+                            actionLabel={actionLabel}
+                        />
+                    );
+                })}
                 <Pagination className="mt-2">
                     <PaginationContent>
                         <PaginationItem>
