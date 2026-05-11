@@ -73,7 +73,16 @@ export type Invoice = {
     status: InvoiceStatus;
     createdAt: string;
     updatedAt: string;
-    booking: InvoiceBooking;
+    booking: InvoiceBooking & {
+        tenant?: {
+            id: string
+            email: string
+            profile?: {
+                fullName: string
+                whatsappNumber: string
+            }
+        }
+    };
     transactions: InvoiceTransaction[];
 };
 
@@ -82,4 +91,9 @@ export type Invoice = {
 // ==========================================
 export interface GetInvoicesParams extends PaginationParams {
     status?: InvoiceStatus;
+}
+
+export interface VerifyTransactionPayload {
+    status?: InvoiceStatus;
+    rejectReason?: string;
 }
