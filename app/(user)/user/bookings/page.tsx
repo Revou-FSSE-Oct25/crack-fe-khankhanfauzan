@@ -20,16 +20,17 @@ import {
     ClockIcon,
     CircleCheckBigIcon,
     CreditCardIcon,
+    PlusIcon,
 } from "lucide-react";
-import { format } from "date-fns";
 import { FilterBar } from "@/components/filters/FilterBar";
 import type { DateRange } from "react-day-picker";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { fetchBookings } from "@/services/bookings";
 import { getSession } from "@/actions/auth";
 import { Booking } from "@/types/bookings";
 import { formatDate, formatRupiah } from "@/utils/format";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 function Page() {
     const [search, setSearch] = React.useState("");
@@ -38,6 +39,8 @@ function Page() {
     );
     const [page, setPage] = React.useState(1);
     const [date, setDate] = React.useState<DateRange | undefined>();
+
+    const router = useRouter();
 
     const all = MOCK_BOOKING_HISTORY.data;
     const pageSize = MOCK_BOOKING_HISTORY.meta.limit;
@@ -65,24 +68,6 @@ function Page() {
     const end = start + pageSize;
     const pageItems = filtered.slice(start, end);
 
-    const totalCount = all.length;
-    const activeCount = all.filter((b) => {
-        const now = new Date();
-        const from = new Date(b.period.start_date).getTime();
-        const to = new Date(b.period.end_date).getTime();
-        return (
-            b.status !== "cancelled" &&
-            now.getTime() >= from &&
-            now.getTime() <= to
-        );
-    }).length;
-    const completedCount = all.filter((b) => b.status === "completed").length;
-    const totalPaid = all.reduce((sum, b) => sum + (b.total_paid ?? 0), 0);
-
-    function formatAmount(n: number) {
-        return `Rp ${n.toLocaleString("id-ID")}`;
-    }
-
     const [booking, setBooking] = useState<Booking[] | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
@@ -96,37 +81,62 @@ function Page() {
             .catch((e) => setErrorMsg(e.message))
             .finally(() => setLoading(false));
 
-        console.log(booking, "booking");
     }, []);
 
     return (
         <div className="p-4 flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+                <h1 className="text-xl font-bold">Booking</h1>
+                <Link href="/rooms">
+                    <Button className="rounded-full">
+                        <PlusIcon className="w-4 h-4 mr-2" /> Booking Baru
+                    </Button>
+                </Link>
+            </div>
             <div className="grid grid-cols-4 gap-4">
                 <StatCard
                     icon={CalendarIcon}
                     title="Total Booking"
-                    value={totalCount}
+                    value={booking?.length || 0}
                     iconBgClass="bg-blue-50"
                     iconColor="oklch(62.3% 0.214 259.815)"
                 />
                 <StatCard
                     icon={ClockIcon}
                     title="Aktif"
-                    value={activeCount}
+                    value={
+                        booking?.filter((b) => b.status === "confirmed")
+                            .length || 0
+                    }
                     iconBgClass="bg-emerald-50"
                     iconColor="oklch(72.3% 0.219 149.579)"
                 />
                 <StatCard
                     icon={CircleCheckBigIcon}
                     title="Selesai"
-                    value={completedCount}
+                    value={
+                        booking?.filter((b) => b.status === "completed")
+                            .length || 0
+                    }
                     iconBgClass="bg-blue-50"
                     iconColor="oklch(62.3% 0.214 259.815)"
                 />
                 <StatCard
                     icon={CreditCardIcon}
                     title="Total Bayar"
-                    value={formatAmount(totalPaid)}
+                    value={formatRupiah(
+                        booking
+                            ?.filter(
+                                (b) =>
+                                    b.status === "confirmed" ||
+                                    b.status === "completed",
+                            )
+                            .reduce(
+                                (sum, b) => sum + Number(b.totalPrice),
+                                0,
+                            ) || 0,
+                        { notation: "compact" },
+                    )}
                     iconBgClass="bg-emerald-50"
                     iconColor="oklch(72.3% 0.219 149.579)"
                 />
@@ -160,50 +170,6 @@ function Page() {
                 }}
             />
             <div className="flex flex-col gap-4">
-                {/* {pageItems.map((b) => {
-                    const isMonthly = b.period.rent_type === "monthly";
-                    const durLabel = isMonthly
-                        ? `${b.period.duration} Bulan`
-                        : `${b.period.duration} Hari`;
-                    const priceLabel = isMonthly
-                        ? `Rp ${(b.total_paid ?? 0) / Math.max(1, b.period.duration)}/bln`
-                        : `Rp ${(b.total_paid ?? 0) / Math.max(1, b.period.duration)}/hari`;
-                    return (
-                        <BookingRow
-                            key={b.booking_id}
-                            roomLabel={`Kamar ${b.room.room_id}`}
-                            floorLabel={`Lt. ${b.room.floor}`}
-                            bookingIdLabel={b.booking_id}
-                            startDateLabel={format(
-                                new Date(b.period.start_date),
-                                "d MMM yyyy",
-                            )}
-                            endDateLabel={format(
-                                new Date(b.period.end_date),
-                                "d MMM yyyy",
-                            )}
-                            durationLabel={durLabel}
-                            priceLabel={priceLabel}
-                            amountLabel={formatAmount(b.total_paid ?? 0)}
-                            status={b.status}
-                            statusLabel={
-                                b.status === "completed"
-                                    ? "Selesai"
-                                    : b.status === "cancelled"
-                                      ? "Dibatalkan"
-                                      : "Expired"
-                            }
-                            actionLabel={
-                                b.status === "cancelled"
-                                    ? undefined
-                                    : b.status === "completed"
-                                      ? undefined
-                                      : "Bayar"
-                            }
-                        />
-                    );
-                })} */}
-
                 {booking?.map((value) => {
                     return (
                         <BookingRow
@@ -242,6 +208,11 @@ function Page() {
                                         ? undefined
                                         : "Bayar"
                             }
+                            onAction={() => {
+                                router.push(
+                                    `/user/bookings/${value.id}/payment`,
+                                );
+                            }}
                         />
                     );
                 })}

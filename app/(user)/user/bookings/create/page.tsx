@@ -38,7 +38,7 @@ import { formatRupiah } from "@/utils/format";
 import { CreditCardIcon, Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useForm, Controller } from "react-hook-form";
 
 type BookingFormInputs = {
@@ -47,12 +47,13 @@ type BookingFormInputs = {
     startDate: string;
 };
 
-function page() {
+function BookingForm() {
     const router = useRouter();
 
     // Get all query params
     const searchParams = useSearchParams();
     const roomId = searchParams.get("roomId");
+    const isExtension = searchParams.get("extend") === "true";
 
     // state for form
     const [user, setProfile] = useState<User | null>(null);
@@ -176,7 +177,9 @@ function page() {
     return (
         <div className="p-4 max-w-7xl mx-auto space-y-4">
             <div>
-                <h1 className="text-lg sm:text-xl font-semibold">Booking</h1>
+                <h1 className="text-lg sm:text-xl font-semibold">
+                    {isExtension ? "Perpanjang Sewa" : "Booking"}
+                </h1>
             </div>
 
             {!user?.profile?.maritalStatus && (
@@ -201,7 +204,11 @@ function page() {
                 <Card className="shadow-none">
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <CardHeader>
-                            <CardTitle>Form Booking</CardTitle>
+                            <CardTitle>
+                                {isExtension
+                                    ? "Form Perpanjangan"
+                                    : "Form Booking"}
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <FieldSet>
@@ -343,7 +350,9 @@ function page() {
                                     ) : (
                                         <CreditCardIcon className="mr-2" />
                                     )}
-                                    Konfirmasi Booking
+                                    {isExtension
+                                        ? "Konfirmasi Perpanjangan"
+                                        : "Konfirmasi Booking"}
                                 </Button>
                                 {!user?.profile?.maritalStatus && (
                                     <p className="text-xs text-muted-foreground text-center">
@@ -416,4 +425,10 @@ function page() {
     );
 }
 
-export default page;
+export default function Page() {
+    return (
+        <Suspense fallback={<Spinner className="items-center" />}>
+            <BookingForm />
+        </Suspense>
+    );
+}

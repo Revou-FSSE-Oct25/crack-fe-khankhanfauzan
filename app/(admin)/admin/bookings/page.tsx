@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,22 +9,89 @@ import {
     PaginationLink,
     PaginationNext,
     PaginationPrevious,
+    PaginationEllipsis,
 } from "@/components/ui/pagination";
 import { FilterBar } from "@/components/filters/FilterBar";
 import type { DateRange } from "react-day-picker";
+import { fetchBookings } from "@/services/bookings";
+import { getSession } from "@/actions/auth";
+import { Booking } from "@/types/bookings";
+import { formatDate, formatDurationUnit } from "@/utils/format";
+import Link from "next/link";
+import { Spinner } from "@/components/ui/spinner";
+import { Badge } from "@/components/ui/badge";
 
 export default function Page() {
     const [search, setSearch] = React.useState("");
     const [status, setStatus] = React.useState("all");
     const [date, setDate] = React.useState<DateRange | undefined>();
+    const [page, setPage] = React.useState(1);
+
+    const [bookings, setBookings] = useState<Booking[] | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const session = getSession();
+        fetchBookings({}, { token: session?.accessToken })
+            .then((res) => setBookings(res.data))
+            .catch((err) => console.error(err))
+            .finally(() => setLoading(false));
+    }, []);
+
+    const all = bookings || [];
+    const pageSize = 10;
+
+    const filtered = React.useMemo(() => {
+        let res = all;
+        if (search.trim()) {
+            const q = search.trim().toLowerCase();
+            res = res.filter(
+                (b) =>
+                    b.id.toLowerCase().includes(q) ||
+                    (b.tenant?.profile?.fullName || "").toLowerCase().includes(q) ||
+                    (b.room?.roomNumber || "").toLowerCase().includes(q)
+            );
+        }
+        if (status !== "all") {
+            res = res.filter((b) => b.status === status);
+        }
+        if (date?.from) {
+            const from = date.from.getTime();
+            const to = date.to?.getTime() ?? Number.POSITIVE_INFINITY;
+            res = res.filter((b) => {
+                const t = new Date(b.startDate).getTime();
+                return t >= from && t <= to;
+            });
+        }
+        return res;
+    }, [all, search, status, date]);
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    const currentPage = Math.min(page, totalPages);
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageItems = filtered.slice(start, end);
+
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case "confirmed":
+                return <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Dikonfirmasi</Badge>;
+            case "pending_payment":
+                return <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100">Menunggu Pembayaran</Badge>;
+            case "cancelled":
+                return <Badge variant="secondary" className="bg-red-100 text-red-700 hover:bg-red-100">Dibatalkan</Badge>;
+            case "completed":
+                return <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100">Selesai</Badge>;
+            default:
+                return <Badge variant="secondary">{status}</Badge>;
+        }
+    };
+
     return (
         <div className="bg-muted h-full">
             <div className="flex h-full flex-col gap-4 md:gap-6 p-4 md:p-6">
                 <div className="flex items-center justify-between">
                     <h1 className="text-xl font-semibold">Booking</h1>
-                    <div className="flex gap-2">
-                        <Button size="sm">Buat Booking</Button>
-                    </div>
                 </div>
 
                 <Card className="shadow-none">
@@ -33,27 +100,25 @@ export default function Page() {
                         <FilterBar
                             search={{
                                 value: search,
-                                onChange: setSearch,
-                                placeholder: "Cari nama / kamar...",
+                                onChange: (v) => { setSearch(v); setPage(1); },
+                                placeholder: "Cari nama / kamar / id...",
                             }}
                             dateRange={{
                                 value: date,
-                                onChange: setDate,
+                                onChange: (v) => { setDate(v); setPage(1); },
                             }}
                             select={{
                                 value: status,
-                                onChange: setStatus,
+                                onChange: (v) => { setStatus(v); setPage(1); },
                                 placeholder: "Status",
                                 options: [
                                     { value: "all", label: "Semua" },
-                                    {
-                                        value: "confirmed",
-                                        label: "Terkonfirmasi",
-                                    },
-                                    { value: "pending", label: "Menunggu" },
+                                    { value: "confirmed", label: "Dikonfirmasi" },
+                                    { value: "pending_payment", label: "Menunggu Pembayaran" },
+                                    { value: "completed", label: "Selesai" },
                                     { value: "cancelled", label: "Dibatalkan" },
                                 ],
-                                triggerClassName: "w-36",
+                                triggerClassName: "w-48",
                             }}
                         />
                     </CardHeader>
@@ -62,95 +127,88 @@ export default function Page() {
                             <table className="w-full text-sm">
                                 <thead className="bg-muted/50">
                                     <tr className="border-b">
-                                        <th className="text-left px-4 py-3 font-medium">
-                                            ID
-                                        </th>
-                                        <th className="text-left px-4 py-3 font-medium">
-                                            Nama
-                                        </th>
-                                        <th className="text-left px-4 py-3 font-medium">
-                                            Kamar
-                                        </th>
-                                        <th className="text-left px-4 py-3 font-medium">
-                                            Check-in
-                                        </th>
-                                        <th className="text-left px-4 py-3 font-medium">
-                                            Durasi
-                                        </th>
-                                        <th className="text-left px-4 py-3 font-medium">
-                                            Status
-                                        </th>
-                                        <th className="text-right px-4 py-3 font-medium">
-                                            Aksi
-                                        </th>
+                                        <th className="text-left px-4 py-3 font-medium">ID</th>
+                                        <th className="text-left px-4 py-3 font-medium">Nama</th>
+                                        <th className="text-left px-4 py-3 font-medium">Kamar</th>
+                                        <th className="text-left px-4 py-3 font-medium">Check-in</th>
+                                        <th className="text-left px-4 py-3 font-medium">Durasi</th>
+                                        <th className="text-left px-4 py-3 font-medium">Status</th>
+                                        <th className="text-right px-4 py-3 font-medium">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody className="[&>tr:last-child]:border-0">
-                                    <tr className="border-b">
-                                        <td className="px-4 py-3">BK-001</td>
-                                        <td className="px-4 py-3">Aulia N</td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            K-12
-                                        </td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            12 Mar 2026
-                                        </td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            2 malam
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className="text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-700">
-                                                Terkonfirmasi
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <Button size="xs" variant="ghost">
-                                                Kelola
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                    <tr className="border-b">
-                                        <td className="px-4 py-3">BK-002</td>
-                                        <td className="px-4 py-3">Raka P</td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            K-08
-                                        </td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            15 Mar 2026
-                                        </td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            1 malam
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className="text-xs px-2 py-0.5 rounded bg-yellow-100 text-yellow-700">
-                                                Menunggu
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <Button size="xs" variant="ghost">
-                                                Kelola
-                                            </Button>
-                                        </td>
-                                    </tr>
+                                    {loading ? (
+                                        <tr>
+                                            <td colSpan={7} className="text-center py-8">
+                                                <Spinner className="mx-auto" />
+                                            </td>
+                                        </tr>
+                                    ) : pageItems.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={7} className="text-center py-8 text-muted-foreground">
+                                                Tidak ada data booking.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        pageItems.map((booking) => (
+                                            <tr key={booking.id} className="border-b hover:bg-muted/30 transition-colors">
+                                                <td className="px-4 py-3 font-mono text-xs">{booking.id.split('-')[0]}...</td>
+                                                <td className="px-4 py-3">{booking.tenant?.profile?.fullName || booking.tenant?.email || "-"}</td>
+                                                <td className="px-4 py-3 text-muted-foreground">{booking.room?.roomNumber || "-"}</td>
+                                                <td className="px-4 py-3 text-muted-foreground">{formatDate(booking.startDate)}</td>
+                                                <td className="px-4 py-3 text-muted-foreground">{booking.duration} {formatDurationUnit(booking.rentType)}</td>
+                                                <td className="px-4 py-3">{getStatusBadge(booking.status)}</td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <Link href={`/admin/bookings/${booking.id}`}>
+                                                        <Button size="sm" variant="outline">Detail</Button>
+                                                    </Link>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                     </CardContent>
-                    <Pagination className="p-3">
-                        <PaginationContent>
-                            <PaginationItem>
-                                <PaginationPrevious href="#" />
-                            </PaginationItem>
-                            <PaginationItem>
-                                <PaginationLink href="#" isActive>
-                                    1
-                                </PaginationLink>
-                            </PaginationItem>
-                            <PaginationItem>
-                                <PaginationNext href="#" />
-                            </PaginationItem>
-                        </PaginationContent>
-                    </Pagination>
+                    {!loading && totalPages > 0 && (
+                        <Pagination className="p-3">
+                            <PaginationContent>
+                                <PaginationItem>
+                                    <PaginationPrevious 
+                                        href="#" 
+                                        onClick={(e) => { e.preventDefault(); setPage(p => Math.max(1, p - 1)); }} 
+                                    />
+                                </PaginationItem>
+                                
+                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                    .filter(n => n === 1 || n === totalPages || Math.abs(n - currentPage) <= 1)
+                                    .map((n, i, arr) => (
+                                        <React.Fragment key={n}>
+                                            {i > 0 && arr[i - 1] !== n - 1 && (
+                                                <PaginationItem><PaginationEllipsis /></PaginationItem>
+                                            )}
+                                            <PaginationItem>
+                                                <PaginationLink 
+                                                    href="#" 
+                                                    isActive={n === currentPage}
+                                                    onClick={(e) => { e.preventDefault(); setPage(n); }}
+                                                >
+                                                    {n}
+                                                </PaginationLink>
+                                            </PaginationItem>
+                                        </React.Fragment>
+                                    ))
+                                }
+
+                                <PaginationItem>
+                                    <PaginationNext 
+                                        href="#" 
+                                        onClick={(e) => { e.preventDefault(); setPage(p => Math.min(totalPages, p + 1)); }} 
+                                    />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
+                    )}
                 </Card>
             </div>
         </div>

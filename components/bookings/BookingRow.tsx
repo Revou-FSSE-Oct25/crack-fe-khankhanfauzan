@@ -14,6 +14,7 @@ import {
     CheckCircleIcon,
     AlertCircleIcon,
 } from "lucide-react";
+import Link from "next/link";
 
 export type Status =
     | "completed"
@@ -181,9 +182,11 @@ function BookingRow({
 
                     <div className="flex flex-col gap-2">
                         {showDetailButton && (
-                            <Button variant="outline" size="sm">
-                                <FileTextIcon /> Detail
-                            </Button>
+                            <Link href={`/user/bookings/${bookingIdLabel}`}>
+                                <Button variant="outline" size="sm">
+                                    <FileTextIcon /> Detail
+                                </Button>
+                            </Link>
                         )}
                         {actionLabel && (
                             <Button

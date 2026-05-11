@@ -41,6 +41,8 @@ export interface Booking {
         id: string
         roomNumber: string
         floor: number
+        building?: string
+        area?: string | number
         priceDaily: number
         priceWeekly: number
         priceMonthly: number
@@ -52,8 +54,24 @@ export interface Booking {
         dueDate: string
         status: string
     }[]
+    tenant?: {
+        id: string
+        email: string
+        profile?: {
+            fullName: string
+            whatsappNumber: string
+            fotoProfileUrl?: string
+            fotoKtpUrl?: string
+            fotoBukuNikahUrl?: string
+            maritalStatus: string,
+        }
+    }
 }
 
 export interface GetBookingsParams extends PaginationParams {
     statis?: string;
+}
+
+
+export interface UpdateBookingPayload extends CreateBookingPayload {
 }
