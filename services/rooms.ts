@@ -4,9 +4,18 @@ import { ApiPaginatedResponse, ApiResponse } from "@/types/types"
 
 
 export async function fetchRooms(params?: GetRoomsParams, opts?: { token?: string }) {
+  // Clean up params by removing empty search string or undefined values
+  const cleanParams: any = { ...params };
+  if (cleanParams.search === "") {
+    delete cleanParams.search;
+  }
+  if (cleanParams.status === undefined) {
+    delete cleanParams.status;
+  }
+
   // Memasukkan RoomMeta khusus sebagai Generic ke-2
   return http.get<ApiPaginatedResponse<Room[], RoomMeta>>("/rooms", {
-    query: params,
+    query: cleanParams,
     headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,
   });
 }

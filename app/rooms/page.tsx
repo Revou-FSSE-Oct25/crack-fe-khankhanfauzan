@@ -6,9 +6,17 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RoomsLegend } from "@/components/rooms/RoomsLegend";
 import { RoomDetailsCard } from "@/components/rooms/RoomDetailsCard";
 import { RoomTile } from "@/components/rooms/RoomTile";
-import { ArrowLeftIcon, InfoIcon, LayoutGridIcon } from "lucide-react";
+import { ArrowLeftIcon, InfoIcon, SearchIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { fetchRooms } from "@/services/rooms";
 import type { Room, GetRoomsParams, RoomMeta } from "@/types/rooms";
@@ -21,16 +29,28 @@ function RoomsPage() {
     const [filters, setFilters] = useState<GetRoomsParams>({
         page: 1,
         perPage: 50,
+        search: "",
+        status: undefined,
     });
+
+    // Debounce search
+    const [searchTerm, setSearchTerm] = useState("");
 
     const router = useRouter();
     const isGuest = false;
 
     useEffect(() => {
+        const timer = setTimeout(() => {
+            setFilters((prev) => ({ ...prev, search: searchTerm }));
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    useEffect(() => {
         fetchRooms(filters)
             .then(setRoomsResponse)
             .catch((e) => {});
-    }, []);
+    }, [filters]);
 
     const uiRooms: Room[] = useMemo(() => {
         return roomsResponse?.data ?? [];
@@ -92,6 +112,52 @@ function RoomsPage() {
 
             <div className="grid lg:grid-cols-[1fr_380px] gap-4">
                 <div className="space-y-4">
+                    <Card className="shadow-none">
+                        <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
+                            <div className="relative flex-1">
+                                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                                <Input
+                                    placeholder="Cari nomor kamar..."
+                                    className="pl-9"
+                                    value={searchTerm}
+                                    onChange={(e) =>
+                                        setSearchTerm(e.target.value)
+                                    }
+                                />
+                            </div>
+                            <div className="w-full sm:w-48">
+                                <Select
+                                    value={filters.status || "all"}
+                                    onValueChange={(val) =>
+                                        setFilters((prev) => ({
+                                            ...prev,
+                                            status:
+                                                val === "all" ? undefined : val,
+                                        }))
+                                    }
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Status Kamar" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            Semua Status
+                                        </SelectItem>
+                                        <SelectItem value="available">
+                                            Tersedia
+                                        </SelectItem>
+                                        <SelectItem value="occupied">
+                                            Terisi
+                                        </SelectItem>
+                                        <SelectItem value="unavailable">
+                                            Tidak Tersedia
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     <div className="grid grid-cols-3 gap-4">
                         <Card className="shadow-none">
                             <CardContent className="flex flex-col text-center">
