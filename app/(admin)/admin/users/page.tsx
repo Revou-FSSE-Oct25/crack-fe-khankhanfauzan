@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchUsers } from "@/services/users";
-import type { User, UsersResponse, UsersResponseMeta } from "@/types/users";
+import type { User } from "@/types/users";
+import type { BasePaginationMeta } from "@/types/types";
 import type { DateRange } from "react-day-picker";
 import {
     Pagination,
@@ -29,6 +30,7 @@ export default function Page() {
             email: string;
             status: "active" | "inactive";
             joinedAt?: string | null;
+            role?: string;
         }[]
     >([]);
     const [loading, setLoading] = useState(true);
@@ -39,8 +41,8 @@ export default function Page() {
     >("semua");
     const [date, setDate] = useState<DateRange | undefined>();
     const [page, setPage] = useState(1);
-    const [limit] = useState(20);
-    const [meta, setMeta] = useState<UsersResponseMeta | null>(null);
+    const [perPage] = useState(20);
+    const [meta, setMeta] = useState<BasePaginationMeta | null>(null);
 
     useEffect(() => {
         let aborted = false;
@@ -54,32 +56,29 @@ export default function Page() {
                 const resp = await fetchUsers(
                     {
                         page,
-                        limit,
-                        q: query || undefined,
+                        perPage,
+                        search: query || undefined,
                     },
                     { token },
                 );
+
                 if (!aborted) {
-                    setMeta((resp as UsersResponse)?.meta ?? null);
+                    setMeta(resp?.meta ?? null);
                     setUsers(
-                        ((resp as UsersResponse)?.data || []).map(
-                            (u: User) => ({
-                                id: u.id,
-                                name: u.fullName,
-                                email: u.email,
-                                status:
-                                    u.currentStay &&
-                                    u.currentStay.status === "active"
-                                        ? "active"
-                                        : "inactive",
-                                joinedAt: u.profile?.joinedAt ?? null,
-                            }),
-                        ),
+                        (resp?.data || []).map((u: User) => ({
+                            id: u.id,
+                            name: u.profile?.fullName || "No Name",
+                            email: u.email,
+                            status: "active", // Default status, replace with actual status if available
+                            joinedAt: u.createdAt ?? null,
+                            role: u.role,
+                        })),
                     );
                 }
-            } catch (e: unknown) {
+            } catch (e: any) {
                 if (!aborted) {
-                    setError("Gagal memuat data pengguna");
+                    console.error("Fetch Users Error:", e);
+                    setError(e.message || "Gagal memuat data pengguna");
                 }
             } finally {
                 if (!aborted) {
@@ -91,7 +90,7 @@ export default function Page() {
         return () => {
             aborted = true;
         };
-    }, [page, limit, query]);
+    }, [page, perPage, query]);
 
     const filtered = useMemo(() => {
         let arr = users;
@@ -112,7 +111,7 @@ export default function Page() {
         return arr;
     }, [users, statusFilter, date]);
 
-    const lastPage = meta?.last_page ?? 1;
+    const lastPage = meta?.totalPages ?? 1;
     const canPrev = page > 1;
     const canNext = page < lastPage;
     function goto(p: number) {
@@ -197,6 +196,9 @@ export default function Page() {
                                             Email
                                         </th>
                                         <th className="text-left px-4 py-3 font-medium">
+                                            Peran
+                                        </th>
+                                        <th className="text-left px-4 py-3 font-medium">
                                             Status
                                         </th>
                                         <th className="text-right px-4 py-3 font-medium">
@@ -258,6 +260,9 @@ export default function Page() {
                                                 </td>
                                                 <td className="px-4 py-3 text-muted-foreground">
                                                     {u.email}
+                                                </td>
+                                                <td className="px-4 py-3 text-muted-foreground capitalize">
+                                                    {u.role}
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     {u.status === "active" ? (
