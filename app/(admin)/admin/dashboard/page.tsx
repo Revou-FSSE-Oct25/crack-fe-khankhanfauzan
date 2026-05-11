@@ -27,37 +27,70 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { IconSurface } from "@/components/ui/icon-surface";
 import {
     AlertTriangleIcon,
     DollarSignIcon,
     DoorClosedIcon,
     HomeIcon,
-    CalendarIcon,
     Grid2x2Icon,
     WrenchIcon,
     BathIcon,
     ZapIcon,
 } from "lucide-react";
-import React from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import { fetchAdminDashboardSummary } from "@/services/dashboard";
+import { getSession } from "@/actions/auth";
+import { AdminDashboardData } from "@/types/admin-dashboard";
+import { format } from "date-fns";
+import { useRouter } from "next/navigation";
 
 function Page() {
-    const salesData = React.useMemo(
-        () => [
-            { day: "Mon", value: 2400000 },
-            { day: "Tue", value: 3100000 },
-            { day: "Wed", value: 2500000 },
-            { day: "Thu", value: 8400000 },
-            { day: "Fri", value: 2600000 },
-            { day: "Sat", value: 2800000 },
-        ],
-        [],
-    );
-    const [range, setRange] = React.useState("weekday");
+    const router = useRouter();
+    const [range, setRange] = useState("weekday");
+    const [data, setData] = useState<AdminDashboardData | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    const breakdown = React.useMemo(
-        () => [
+    useEffect(() => {
+        let aborted = false;
+        async function load() {
+            setLoading(true);
+            try {
+                const session = getSession();
+                const token = session?.accessToken;
+                const res = await fetchAdminDashboardSummary(range, { token });
+                if (!aborted && res?.data) {
+                    setData(res.data);
+                }
+            } catch (err: any) {
+                console.error(err);
+                if (err?.status === 401) {
+                    router.push("/login");
+                }
+            } finally {
+                if (!aborted) setLoading(false);
+            }
+        }
+        load();
+        return () => {
+            aborted = true;
+        };
+    }, [range]);
+
+    const salesData = useMemo(() => {
+        if (!data?.salesReport) return [];
+        return data.salesReport.map((item) => ({
+            day: item.label,
+            value: item.value,
+        }));
+    }, [data?.salesReport]);
+
+    const breakdown = useMemo(() => {
+        // Fallback mock breakdown since BE skips it
+        if (data?.costBreakdown && data.costBreakdown.length > 0) {
+            return data.costBreakdown;
+        }
+        return [
             {
                 label: "Maintenance",
                 value: 1200000,
@@ -70,10 +103,10 @@ function Page() {
                 color: "var(--color-violet-500)",
             },
             { label: "Saving", value: 1600000, color: "var(--color-blue-500)" },
-        ],
-        [],
-    );
-    const totalBreakdown = React.useMemo(
+        ];
+    }, [data?.costBreakdown]);
+
+    const totalBreakdown = useMemo(
         () => breakdown.reduce((acc, b) => acc + b.value, 0),
         [breakdown],
     );
@@ -84,6 +117,16 @@ function Page() {
             maximumFractionDigits: 0,
         }).format(n);
 
+    if (loading && !data) {
+        return <div className="p-6">Loading...</div>;
+    }
+
+    if (!data) {
+        return <div className="p-6">Failed to load dashboard.</div>;
+    }
+
+    const totalRevenue = salesData.reduce((sum, item) => sum + item.value, 0);
+
     return (
         <div className="bg-muted h-full">
             <AppHeader />
@@ -92,28 +135,30 @@ function Page() {
                     <StatCard
                         icon={DoorClosedIcon}
                         title="Available Rooms"
-                        value={16}
+                        value={data.roomStatus.empty}
                         iconBgClass="bg-blue-100"
                         iconColor="var(--color-blue-500)"
                     />
                     <StatCard
                         icon={AlertTriangleIcon}
                         title="Total Maintenance"
-                        value={7}
+                        value={data.statistics.activeMaintenances.value}
                         iconBgClass="bg-amber-100"
                         iconColor="var(--color-amber-500)"
                     />
                     <StatCard
                         icon={DollarSignIcon}
                         title="Payment Received"
-                        value={currency(8400000)}
+                        value={currency(totalRevenue)}
                         iconBgClass="bg-green-100"
                         iconColor="var(--color-green-500)"
                     />
                     <StatCard
                         icon={DollarSignIcon}
                         title="Outstanding Payment"
-                        value={currency(4800000)}
+                        value={currency(
+                            data.statistics.outstandingInvoices.value,
+                        )}
                         iconBgClass="bg-red-100"
                         iconColor="var(--color-red-500)"
                     />
@@ -187,7 +232,8 @@ function Page() {
                                     Revenue
                                 </p>
                                 <p className="text-sm font-medium">
-                                    {currency(8400000)} • Thu 12 Jul
+                                    {currency(totalRevenue)} •{" "}
+                                    {format(new Date(), "E, dd MMM")}
                                 </p>
                             </div>
                         </CardContent>
@@ -283,54 +329,52 @@ function Page() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <IconSurface bgClass="bg-emerald-100">
-                                        <HomeIcon color="var(--color-emerald-600)" />
-                                    </IconSurface>
-                                    <div>
-                                        <p className="font-medium">
-                                            123 Maple Avenue Springfield
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            12 Sep 2024, 9:29
-                                        </p>
-                                    </div>
-                                </div>
-                                <p className="text-sm font-medium">Rp 30k</p>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <IconSurface bgClass="bg-amber-100">
-                                        <CalendarIcon color="var(--color-amber-600)" />
-                                    </IconSurface>
-                                    <div>
-                                        <p className="font-medium">
-                                            Booking 987 Villa Street
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            10 Sep 2024, 9:29
-                                        </p>
-                                    </div>
-                                </div>
-                                <p className="text-sm font-medium">Rp 10k</p>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <IconSurface bgClass="bg-blue-100">
-                                        <Grid2x2Icon color="var(--color-blue-600)" />
-                                    </IconSurface>
-                                    <div>
-                                        <p className="font-medium">
-                                            Apartment Booking On Garden Street
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            08 Sep 2024, 9:29
+                            {data.recentActivities.length > 0 ? (
+                                data.recentActivities.map((activity) => (
+                                    <div
+                                        key={activity.id}
+                                        className="flex items-center justify-between"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <IconSurface
+                                                bgClass={
+                                                    activity.type === "payment"
+                                                        ? "bg-emerald-100"
+                                                        : "bg-blue-100"
+                                                }
+                                            >
+                                                {activity.type === "payment" ? (
+                                                    <HomeIcon color="var(--color-emerald-600)" />
+                                                ) : (
+                                                    <Grid2x2Icon color="var(--color-blue-600)" />
+                                                )}
+                                            </IconSurface>
+                                            <div>
+                                                <p className="font-medium text-sm">
+                                                    {activity.title}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {format(
+                                                        new Date(activity.date),
+                                                        "dd MMM yyyy, HH:mm",
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm font-medium">
+                                            {activity.type === "payment"
+                                                ? currency(
+                                                      Number(activity.subtitle),
+                                                  )
+                                                : activity.subtitle}
                                         </p>
                                     </div>
-                                </div>
-                                <p className="text-sm font-medium">Rp 20k</p>
-                            </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    Tidak ada transaksi terbaru.
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -344,69 +388,81 @@ function Page() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-start gap-3">
-                                    <IconSurface bgClass="bg-amber-100">
-                                        <WrenchIcon color="var(--color-amber-600)" />
-                                    </IconSurface>
-                                    <div className="flex flex-col">
-                                        <p className="font-medium">
-                                            Plumbing | 721 Meadowview
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            Request ID: MR-001
-                                        </p>
-                                        <p className="text-xs text-red-600">
-                                            Broke Garbage
-                                        </p>
-                                    </div>
-                                </div>
-                                <Avatar>
-                                    <AvatarFallback>JJ</AvatarFallback>
-                                </Avatar>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-start gap-3">
-                                    <IconSurface bgClass="bg-blue-100">
-                                        <ZapIcon color="var(--color-blue-600)" />
-                                    </IconSurface>
-                                    <div className="flex flex-col">
-                                        <p className="font-medium">
-                                            Electrical | 721 Meadowview
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            Request ID: MR-002
-                                        </p>
-                                        <p className="text-xs text-red-600">
-                                            No Heat Bathroom
-                                        </p>
-                                    </div>
-                                </div>
-                                <Avatar>
-                                    <AvatarFallback>AF</AvatarFallback>
-                                </Avatar>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-start gap-3">
-                                    <IconSurface bgClass="bg-emerald-100">
-                                        <BathIcon color="var(--color-emerald-600)" />
-                                    </IconSurface>
-                                    <div className="flex flex-col">
-                                        <p className="font-medium">
-                                            HVAC | 721 Meadowview
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            Request ID: MR-003
-                                        </p>
-                                        <p className="text-xs text-red-600">
-                                            Non Functional Fan
-                                        </p>
-                                    </div>
-                                </div>
-                                <Avatar>
-                                    <AvatarFallback>RF</AvatarFallback>
-                                </Avatar>
-                            </div>
+                            {data.recentMaintenances.length > 0 ? (
+                                data.recentMaintenances.map((maintenance) => {
+                                    const priorityColors: Record<
+                                        string,
+                                        {
+                                            bg: string;
+                                            text: string;
+                                            icon: React.ReactNode;
+                                        }
+                                    > = {
+                                        high: {
+                                            bg: "bg-amber-100",
+                                            text: "text-red-600",
+                                            icon: (
+                                                <WrenchIcon color="var(--color-amber-600)" />
+                                            ),
+                                        },
+                                        medium: {
+                                            bg: "bg-blue-100",
+                                            text: "text-amber-600",
+                                            icon: (
+                                                <ZapIcon color="var(--color-blue-600)" />
+                                            ),
+                                        },
+                                        low: {
+                                            bg: "bg-emerald-100",
+                                            text: "text-green-600",
+                                            icon: (
+                                                <BathIcon color="var(--color-emerald-600)" />
+                                            ),
+                                        },
+                                    };
+                                    const pColor =
+                                        priorityColors[maintenance.priority] ||
+                                        priorityColors.low;
+
+                                    return (
+                                        <div
+                                            key={maintenance.id}
+                                            className="flex items-center justify-between"
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <IconSurface
+                                                    bgClass={pColor.bg}
+                                                >
+                                                    {pColor.icon}
+                                                </IconSurface>
+                                                <div className="flex flex-col">
+                                                    <p className="font-medium text-sm">
+                                                        {maintenance.category} |{" "}
+                                                        {maintenance.room}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Request ID:{" "}
+                                                        {maintenance.id
+                                                            .substring(0, 8)
+                                                            .toUpperCase()}
+                                                    </p>
+                                                    <p
+                                                        className={`text-xs ${pColor.text}`}
+                                                    >
+                                                        {
+                                                            maintenance.description
+                                                        }
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    Tidak ada maintenance terbaru.
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
