@@ -89,18 +89,18 @@ function Page() {
     const pageItems = filtered.slice(start, end);
 
     const totalCount = all.length;
-    const pendingCount = all.filter((c) => c.status === "pending").length;
+    const pendingCount = all.filter((c) => c.status === "open").length;
     const progressCount = all.filter((c) => c.status === "in_progress").length;
     const resolvedCount = all.filter((c) => c.status === "resolved").length;
 
     const statusLabel = (s: ComplaintStatus) =>
-        s === "pending"
-            ? "Pending"
+        s === "open"
+            ? "Open"
             : s === "in_progress"
               ? "In Progress"
               : s === "resolved"
-                ? "Completed"
-                : "Ditolak";
+                ? "Resolved"
+                : "Closed";
     const toTitle = (desc: string) => {
         const first = desc.split(",")[0]?.trim() || desc.trim();
         return first.charAt(0).toUpperCase() + first.slice(1);
