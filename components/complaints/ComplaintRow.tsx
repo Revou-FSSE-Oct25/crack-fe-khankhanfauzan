@@ -19,32 +19,27 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export type Status =
-    | "pending"
-    | "in_progress"
-    | "resolved"
-    | "rejected"
-    | string;
+export type Status = "open" | "in_progress" | "resolved" | "closed" | string;
 
 const badgeClassByStatus: Record<string, string> = {
-    pending: "bg-blue-50 border-blue-200 text-blue-900",
+    open: "bg-blue-50 border-blue-200 text-blue-900",
     in_progress: "bg-amber-50 border-amber-200 text-amber-900",
     resolved: "bg-green-50 border-green-200 text-green-900",
-    rejected: "bg-red-50 border-red-200 text-red-900",
+    closed: "bg-red-50 border-red-200 text-red-900",
 };
 
 const badgeIconByStatus: Record<string, LucideIcon> = {
-    pending: ClockIcon,
+    open: ClockIcon,
     in_progress: TriangleAlertIcon,
     resolved: CircleCheckBigIcon,
-    rejected: CircleXIcon,
+    closed: CircleXIcon,
 };
 
 const badgeIconColorByStatus: Record<string, string> = {
-    pending: "var(--color-blue-900)",
+    open: "var(--color-blue-900)",
     in_progress: "orange",
     resolved: "green",
-    rejected: "red",
+    closed: "red",
 };
 
 const categoryIconByLabel: Record<string, LucideIcon> = {
@@ -81,7 +76,7 @@ function ComplaintRow({
     createdLabel: string;
     resolvedLabel?: string;
     description: string;
-    status: "pending" | "in_progress" | "resolved" | "rejected" | string;
+    status: "open" | "in_progress" | "resolved" | "closed" | string;
     statusLabel?: string;
     className?: string;
     detailHref?: string;

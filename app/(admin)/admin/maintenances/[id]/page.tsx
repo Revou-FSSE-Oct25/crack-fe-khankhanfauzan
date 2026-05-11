@@ -47,22 +47,22 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 const badgeClassByStatus: Record<string, string> = {
-    pending: "bg-blue-50 border-blue-200 text-blue-900",
+    open: "bg-blue-50 border-blue-200 text-blue-900",
     in_progress: "bg-amber-50 border-amber-200 text-amber-900",
     resolved: "bg-green-50 border-green-200 text-green-900",
-    rejected: "bg-red-50 border-red-200 text-red-900",
+    closed: "bg-red-50 border-red-200 text-red-900",
 };
 
 const formatStatusLabel = (status: string) => {
     switch (status) {
-        case "pending":
+        case "open":
             return "Menunggu Diproses";
         case "in_progress":
             return "Sedang Dikerjakan";
         case "resolved":
             return "Selesai";
-        case "rejected":
-            return "Ditolak";
+        case "closed":
+            return "Ditutup / Ditolak";
         default:
             return status;
     }
@@ -87,13 +87,13 @@ const formatCategoryLabel = (category: string) => {
 
 const statusIcon = (status: string) => {
     switch (status) {
-        case "pending":
+        case "open":
             return <ClockIcon className="w-4 h-4" />;
         case "in_progress":
             return <TriangleAlertIcon className="w-4 h-4" />;
         case "resolved":
             return <CheckCircleIcon className="w-4 h-4" />;
-        case "rejected":
+        case "closed":
             return <ShieldAlertIcon className="w-4 h-4" />;
         default:
             return <ClockIcon className="w-4 h-4" />;
@@ -106,19 +106,16 @@ export default function ComplaintDetailPage() {
 
     const [complaint, setComplaint] = useState<Maintenance | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [updating, setUpdating] = useState<boolean>(false);
+    const [loading, setLoading] = useState(true);
+    const [updating, setUpdating] = useState(false);
 
     // Form state
     const { control, handleSubmit, reset } = useForm({
         defaultValues: {
-            status: "pending" as ComplaintStatus,
+            status: "open" as ComplaintStatus,
             adminNotes: "",
         },
     });
-
-    const [images, setImages] = useState<File[]>([]);
-    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
     useEffect(() => {
         const session = getSession();
@@ -138,72 +135,21 @@ export default function ComplaintDetailPage() {
             .finally(() => setLoading(false));
     }, [id, reset]);
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const newFiles = Array.from(e.target.files);
-
-            if (images.length + newFiles.length > 5) {
-                toast.error("Maksimal 5 gambar yang diperbolehkan");
-                return;
-            }
-
-            const validFiles = newFiles.filter((file) => {
-                if (!file.type.startsWith("image/")) {
-                    toast.error(`${file.name} bukan file gambar valid`);
-                    return false;
-                }
-                if (file.size > 5 * 1024 * 1024) {
-                    toast.error(`${file.name} melebihi ukuran maksimal 5MB`);
-                    return false;
-                }
-                return true;
-            });
-
-            if (validFiles.length > 0) {
-                setImages((prev) => [...prev, ...validFiles]);
-
-                const newPreviews = validFiles.map((file) =>
-                    URL.createObjectURL(file),
-                );
-                setImagePreviews((prev) => [...prev, ...newPreviews]);
-            }
-        }
-    };
-
-    const removeImage = (index: number) => {
-        setImages((prev) => prev.filter((_, i) => i !== index));
-        URL.revokeObjectURL(imagePreviews[index]);
-        setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-    };
-
     const onSubmit = async (data: any) => {
         setUpdating(true);
         try {
             const session = getSession();
             const token = session?.accessToken;
 
-            // If there are images, we MUST use FormData
-            if (images.length > 0) {
-                const payload = new FormData();
-                payload.append("status", data.status);
-                payload.append("adminNotes", data.adminNotes);
-                images.forEach((image) => {
-                    payload.append("images", image);
-                });
-
-                const res = await updateMaintenanceStatus(id, payload, {
-                    token,
-                });
-                setComplaint(res.data);
-
-                // Clear images after successful upload
-                setImages([]);
-                setImagePreviews([]);
-            } else {
-                // Regular JSON payload if no images
-                const res = await updateMaintenanceStatus(id, data, { token });
-                setComplaint(res.data);
-            }
+            const res = await updateMaintenanceStatus(
+                id,
+                {
+                    status: data.status,
+                    adminNotes: data.adminNotes,
+                },
+                { token },
+            );
+            setComplaint(res.data);
 
             toast.success("Status komplain berhasil diperbarui");
         } catch (error: any) {
@@ -468,7 +414,7 @@ export default function ComplaintDetailPage() {
                                                     <SelectValue placeholder="Pilih status" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="pending">
+                                                    <SelectItem value="open">
                                                         Menunggu Diproses
                                                     </SelectItem>
                                                     <SelectItem value="in_progress">
@@ -477,8 +423,8 @@ export default function ComplaintDetailPage() {
                                                     <SelectItem value="resolved">
                                                         Selesai
                                                     </SelectItem>
-                                                    <SelectItem value="rejected">
-                                                        Ditolak
+                                                    <SelectItem value="closed">
+                                                        Ditutup / Ditolak
                                                     </SelectItem>
                                                 </SelectContent>
                                             </Select>
@@ -500,51 +446,6 @@ export default function ComplaintDetailPage() {
                                             />
                                         )}
                                     />
-                                </div>
-                                <div className="space-y-3">
-                                    <label className="text-xs font-medium text-muted-foreground">
-                                        Lampiran Foto (Opsional, maks 5)
-                                    </label>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                        {imagePreviews.map((preview, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="relative aspect-square rounded-lg overflow-hidden border group"
-                                            >
-                                                <Image
-                                                    src={preview}
-                                                    alt={`Preview ${idx + 1}`}
-                                                    fill
-                                                    className="object-cover"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        removeImage(idx)
-                                                    }
-                                                    className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                >
-                                                    <XIcon className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ))}
-
-                                        {images.length < 5 && (
-                                            <label className="flex flex-col items-center justify-center aspect-square border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                                                <UploadIcon className="w-6 h-6 text-gray-400 mb-2" />
-                                                <span className="text-xs text-gray-500">
-                                                    Tambah Foto
-                                                </span>
-                                                <input
-                                                    type="file"
-                                                    className="hidden"
-                                                    accept="image/*"
-                                                    multiple
-                                                    onChange={handleImageChange}
-                                                />
-                                            </label>
-                                        )}
-                                    </div>
                                 </div>
                                 <Button
                                     type="submit"

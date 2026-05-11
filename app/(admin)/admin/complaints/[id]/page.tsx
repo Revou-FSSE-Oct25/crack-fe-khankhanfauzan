@@ -43,22 +43,22 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 const badgeClassByStatus: Record<string, string> = {
-    pending: "bg-blue-50 border-blue-200 text-blue-900",
+    open: "bg-blue-50 border-blue-200 text-blue-900",
     in_progress: "bg-amber-50 border-amber-200 text-amber-900",
     resolved: "bg-green-50 border-green-200 text-green-900",
-    rejected: "bg-red-50 border-red-200 text-red-900",
+    closed: "bg-red-50 border-red-200 text-red-900",
 };
 
 const formatStatusLabel = (status: string) => {
     switch (status) {
-        case "pending":
+        case "open":
             return "Menunggu Diproses";
         case "in_progress":
             return "Sedang Dikerjakan";
         case "resolved":
             return "Selesai";
-        case "rejected":
-            return "Ditolak";
+        case "closed":
+            return "Ditutup / Ditolak";
         default:
             return status;
     }
@@ -83,13 +83,13 @@ const formatCategoryLabel = (category: string) => {
 
 const statusIcon = (status: string) => {
     switch (status) {
-        case "pending":
+        case "open":
             return <ClockIcon className="w-4 h-4" />;
         case "in_progress":
             return <TriangleAlertIcon className="w-4 h-4" />;
         case "resolved":
             return <CheckCircleIcon className="w-4 h-4" />;
-        case "rejected":
+        case "closed":
             return <ShieldAlertIcon className="w-4 h-4" />;
         default:
             return <ClockIcon className="w-4 h-4" />;
@@ -106,8 +106,7 @@ export default function ComplaintDetailPage() {
     const [updating, setUpdating] = useState<boolean>(false);
 
     // State for admin update
-    const [updateStatus, setUpdateStatus] =
-        useState<ComplaintStatus>("pending");
+    const [updateStatus, setUpdateStatus] = useState<ComplaintStatus>("open");
     const [adminNotes, setAdminNotes] = useState("");
 
     useEffect(() => {
@@ -383,15 +382,15 @@ export default function ComplaintDetailPage() {
                                 </label>
                                 <Select
                                     value={updateStatus}
-                                    onValueChange={(v) =>
-                                        setUpdateStatus(v as ComplaintStatus)
+                                    onValueChange={(val) =>
+                                        setUpdateStatus(val as ComplaintStatus)
                                     }
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Pilih status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="pending">
+                                        <SelectItem value="open">
                                             Menunggu Diproses
                                         </SelectItem>
                                         <SelectItem value="in_progress">
@@ -400,7 +399,7 @@ export default function ComplaintDetailPage() {
                                         <SelectItem value="resolved">
                                             Selesai
                                         </SelectItem>
-                                        <SelectItem value="rejected">
+                                        <SelectItem value="closed">
                                             Ditolak
                                         </SelectItem>
                                     </SelectContent>

@@ -79,7 +79,7 @@ export default function Page() {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case "pending":
+            case "open":
                 return (
                     <Badge
                         variant="secondary"
@@ -106,17 +106,17 @@ export default function Page() {
                         Selesai
                     </Badge>
                 );
-            case "rejected":
+            case "closed":
                 return (
                     <Badge
                         variant="secondary"
                         className="bg-red-50 text-red-700 border-red-200"
                     >
-                        Ditolak
+                        Ditutup / Ditolak
                     </Badge>
                 );
             default:
-                return <Badge variant="secondary">{status}</Badge>;
+                return <Badge variant="outline">{status}</Badge>;
         }
     };
 

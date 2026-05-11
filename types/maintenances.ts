@@ -1,7 +1,7 @@
 import { PaginationParams } from './common';
 
 export type ComplaintCategory = 'plumbing' | 'electrical' | 'furniture' | 'ac' | 'others';
-export type ComplaintStatus = 'pending' | 'in_progress' | 'resolved' | 'rejected';
+export type ComplaintStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 
 export interface MaintenanceImage {
   id: string;
