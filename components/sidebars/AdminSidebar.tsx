@@ -121,14 +121,6 @@ export function AdminSidebar({ ...props }: AdminSidebarProps) {
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton asChild>
-                                <Link href="/admin/transactions">
-                                    <CreditCardIcon />
-                                    <span>Transactions</span>
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarGroup>
             </SidebarContent>

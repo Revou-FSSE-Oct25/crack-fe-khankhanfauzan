@@ -92,9 +92,11 @@ function Page() {
                     <CardContent className="flex gap-2 justify-between">
                         <div className="flex flex-col">
                             <p className="text-sm text-muted-foreground">
-                                Total Transaksi
+                                Total Tagihan
                             </p>
-                            <p className="text-xl font-bold">5</p>
+                            <p className="text-xl font-bold">
+                                {invoices?.length || 0}
+                            </p>
                         </div>
                         <IconSurface
                             bgClass="bg-blue-100"
@@ -110,7 +112,10 @@ function Page() {
                             <p className="text-sm text-muted-foreground">
                                 Dibayar
                             </p>
-                            <p className="text-xl font-bold">2</p>
+                            <p className="text-xl font-bold">
+                                {invoices?.filter((i) => i.status === "paid")
+                                    .length || 0}
+                            </p>
                         </div>
                         <IconSurface
                             bgClass="bg-green-100"
@@ -126,7 +131,10 @@ function Page() {
                             <p className="text-sm text-muted-foreground">
                                 Pending
                             </p>
-                            <p className="text-xl font-bold">2</p>
+                            <p className="text-xl font-bold">
+                                {invoices?.filter((i) => i.status === "unpaid")
+                                    .length || 0}
+                            </p>
                         </div>
                         <IconSurface
                             bgClass="bg-amber-100"
@@ -142,7 +150,18 @@ function Page() {
                             <p className="text-sm text-muted-foreground">
                                 Total Bayar
                             </p>
-                            <p className="text-xl font-bold">Rp 3.0M</p>
+                            <p className="text-xl font-bold">
+                                {formatRupiah(
+                                    invoices
+                                        ?.filter((i) => i.status === "paid")
+                                        .reduce(
+                                            (acc, curr) =>
+                                                acc + Number(curr.totalAmount),
+                                            0,
+                                        ) || 0,
+                                    { notation: "compact" },
+                                )}
+                            </p>
                         </div>
                         <IconSurface
                             bgClass="bg-green-100"
@@ -160,7 +179,7 @@ function Page() {
                         setSearch(v);
                         setPage(1);
                     },
-                    placeholder: "Cari transaksi...",
+                    placeholder: "Cari tagihan...",
                 }}
                 dateRange={{
                     value: date,
@@ -276,24 +295,43 @@ function Page() {
                             trxId={invoice.id}
                             bookingId={invoice.bookingId}
                             methodLabel={
-                                invoice.transactions[0].paymentMethod || "-"
+                                invoice.transactions &&
+                                invoice.transactions.length > 0
+                                    ? invoice.transactions[0].paymentMethod ||
+                                      "-"
+                                    : "-"
                             }
-                            dueDateLabel={formatDate(invoice.dueDate, {
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                            })}
-                            paidDateLabel={formatDate(
-                                invoice.transactions[0].paidAt,
-                                {
-                                    day: "numeric",
-                                    month: "long",
-                                    year: "numeric",
-                                },
-                            )}
-                            amountLabel={formatRupiah(
-                                invoice.transactions[0].amount,
-                            )}
+                            dueDateLabel={
+                                invoice.transactions &&
+                                invoice.transactions.length > 0
+                                    ? formatDate(invoice.dueDate, {
+                                          day: "numeric",
+                                          month: "long",
+                                          year: "numeric",
+                                      })
+                                    : "-"
+                            }
+                            paidDateLabel={
+                                invoice.transactions &&
+                                invoice.transactions.length > 0
+                                    ? formatDate(
+                                          invoice.transactions[0].paidAt,
+                                          {
+                                              day: "numeric",
+                                              month: "long",
+                                              year: "numeric",
+                                          },
+                                      )
+                                    : "-"
+                            }
+                            amountLabel={
+                                invoice.transactions &&
+                                invoice.transactions.length > 0
+                                    ? formatRupiah(
+                                          invoice.transactions[0].amount,
+                                      )
+                                    : "-"
+                            }
                             status={invoice.booking.status as BookingStatus}
                             statusLabel={statusLabel}
                             actionLabel={actionLabel}

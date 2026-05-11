@@ -29,9 +29,7 @@ function RoomsPage() {
     useEffect(() => {
         fetchRooms(filters)
             .then(setRoomsResponse)
-            .catch((e) => {
-                console.log(e);
-            });
+            .catch((e) => {});
     }, []);
 
     const uiRooms: Room[] = useMemo(() => {
@@ -75,8 +73,6 @@ function RoomsPage() {
                 })),
         }));
     }, [uiRooms]);
-
-    console.log(roomGroups);
 
     return (
         <div className="px-4 py-4 max-w-7xl mx-auto">

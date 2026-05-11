@@ -42,9 +42,6 @@ function Page() {
                         <form
                             onSubmit={handleSubmit(({ email }) => {
                                 setSent(true);
-                                console.log("forgot-password submit", {
-                                    email,
-                                });
                             })}
                         >
                             <FieldSet className="w-full">

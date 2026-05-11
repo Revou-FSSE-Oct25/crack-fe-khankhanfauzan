@@ -135,6 +135,11 @@ function TransactionRow({
                             </Button>
                         </Link>
                     )}
+                    <Link href={`/user/transactions/${trxId}`}>
+                        <Button variant="outline" size="sm">
+                            <FileTextIcon className="w-4 h-4 mr-1" /> Detail
+                        </Button>
+                    </Link>
                     {showInvoiceButton && (
                         <Button variant="outline" size="sm">
                             <FileTextIcon /> Invoice

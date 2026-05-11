@@ -60,7 +60,6 @@ function Page() {
                 password: data.password,
                 confirmPassword: data.confirmPassword,
             });
-            console.log(res);
             if (res?.status === 201 || res?.status === 200) {
                 router.push("/login");
                 return;

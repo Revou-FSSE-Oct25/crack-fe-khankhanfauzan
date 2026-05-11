@@ -73,7 +73,6 @@ export default function Page() {
                     description: f.description ?? null,
                 }));
 
-            console.log(selectedFacilities);
             const payload = {
                 roomNumber: values.roomNumber,
                 floor: values.floor ?? 0,

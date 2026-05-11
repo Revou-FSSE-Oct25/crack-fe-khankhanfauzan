@@ -80,7 +80,6 @@ function Page() {
             .then((value) => setBooking(value.data))
             .catch((e) => setErrorMsg(e.message))
             .finally(() => setLoading(false));
-
     }, []);
 
     return (

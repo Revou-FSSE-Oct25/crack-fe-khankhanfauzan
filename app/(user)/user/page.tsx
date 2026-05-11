@@ -82,8 +82,6 @@ function Page() {
             .then((value) => setTenantDashboard(value.data))
             .catch((e) => seterrorMsg(e.message))
             .finally(() => setLoading(false));
-
-        console.log(tenantDashboard?.recentTransactions, "dashboard");
     }, []);
 
     return (

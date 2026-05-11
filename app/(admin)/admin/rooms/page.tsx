@@ -31,7 +31,6 @@ export default function Page() {
 
         fetchRooms(undefined, { token })
             .then((value) => {
-                console.log(value);
                 return setRooms(value.data);
             })
             .catch((e) => setErrorMsg(e.message))

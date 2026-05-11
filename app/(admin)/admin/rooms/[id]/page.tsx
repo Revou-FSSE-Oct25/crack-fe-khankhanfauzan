@@ -1,7 +1,10 @@
 import RoomDetailsForm from "@/components/rooms/RoomDetailsForm";
 import { fetchRoomById } from "@/services/rooms";
-import { Props } from "@/types/param";
 import { cookies } from "next/headers";
+
+type Props = {
+    params: Promise<{ id: string }>;
+};
 
 async function getTokenFromCookie(): Promise<string | undefined> {
     const store = await cookies();

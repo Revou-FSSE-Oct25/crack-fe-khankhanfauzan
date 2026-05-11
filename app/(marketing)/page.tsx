@@ -38,8 +38,6 @@ function page() {
                 const response = await fetchLandingPageSummary();
 
                 setData(response.data);
-
-                console.log(response, "response:");
             } catch (error: any) {
                 setError(
                     error.message || "Terjadi kesalahan saat memuat data.",
@@ -126,7 +124,7 @@ function page() {
                         <h2 className="text-lg font-semibold">Fasilitas</h2>
                         <div className="grid grid-cols-2 gap-3">
                             {data.facilities.map((facility) => (
-                                <Card>
+                                <Card key={facility.name}>
                                     <CardContent className="flex gap-2 items-center">
                                         <IconSurface
                                             bgClass="bg-accent"

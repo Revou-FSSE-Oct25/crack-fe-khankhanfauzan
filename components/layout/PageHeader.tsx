@@ -29,7 +29,7 @@ function PageHeader({
     const labelMap: Record<string, string> = {
         user: "User",
         bookings: "Booking",
-        transactions: "Transaksi",
+        transactions: "Tagihan",
         complaints: "Komplain",
         reviews: "Review",
         profile: "Profile",

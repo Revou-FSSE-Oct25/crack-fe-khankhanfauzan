@@ -75,7 +75,7 @@ export function AppSidebar({ ...props }: AdminSidebarProps) {
                             <SidebarMenuButton asChild>
                                 <Link href="/user/transactions">
                                     <CreditCardIcon />
-                                    <span>Transaksi</span>
+                                    <span>Tagihan</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
