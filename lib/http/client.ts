@@ -44,6 +44,13 @@ async function handleResponse<T>(res: Response): Promise<T> {
   const contentType = res.headers.get("content-type") || ""
   const isJson = contentType.includes("application/json")
   if (!res.ok) {
+    if (res.status === 401 && typeof window !== "undefined") {
+      // Clear session cookie
+      document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      // Redirect to login page
+      window.location.href = "/login";
+    }
+
     let message = res.statusText || "Request failed"
     let details: unknown = undefined
     if (isJson) {
@@ -84,8 +91,11 @@ async function request<T>(
   const url = buildUrl(path, options?.query)
   const headers = mergeHeaders(options?.headers, {
     Accept: "application/json",
-    "Content-Type": body instanceof FormData ? "multipart/form-data" : "application/json",
   })
+  
+  if (!(body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
   const init: RequestInit = {
     method,
     headers,

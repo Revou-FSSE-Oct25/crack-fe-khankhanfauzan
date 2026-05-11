@@ -26,6 +26,9 @@ function setCookie(name: string, value: string, opts?: { expires?: Date | string
 }
 
 function getCookie(name: string): string | null {
+    if (typeof document === "undefined") {
+        return null; // Don't try to access document on the server
+    }
     const cookies = document.cookie ? document.cookie.split("; ") : [];
     for (const c of cookies) {
         const [k, ...rest] = c.split("=");
