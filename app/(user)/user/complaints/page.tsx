@@ -1,9 +1,10 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconSurface } from "@/components/ui/icon-surface";
+import { Button } from "@/components/ui/button";
 import {
     Pagination,
     PaginationContent,
@@ -19,9 +20,14 @@ import {
     ClockIcon,
     TriangleAlertIcon,
     WrenchIcon,
+    PlusIcon,
 } from "lucide-react";
-import { MOCK_COMPLAINTS, ComplaintStatus } from "@/mocks/complaints";
 import { FilterBar } from "@/components/filters/FilterBar";
+import { getSession } from "@/actions/auth";
+import { fetchMaintenances } from "@/services/maintenances";
+import { ComplaintStatus, Maintenance } from "@/types/maintenances";
+import Link from "next/link";
+import { Spinner } from "@/components/ui/spinner";
 
 function Page() {
     const [search, setSearch] = React.useState("");
@@ -31,8 +37,21 @@ function Page() {
     );
     const [page, setPage] = React.useState(1);
 
-    const all = MOCK_COMPLAINTS.data;
-    const pageSize = MOCK_COMPLAINTS.meta.limit;
+    const [maintenances, setMaintenances] = useState<Maintenance[] | null>(
+        null,
+    );
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const session = getSession();
+        fetchMaintenances({}, { token: session?.accessToken })
+            .then((res) => setMaintenances(res.data))
+            .catch((err) => console.error(err))
+            .finally(() => setLoading(false));
+    }, []);
+
+    const all = maintenances || [];
+    const pageSize = 10;
 
     const filtered = React.useMemo(() => {
         let res = all;
@@ -40,9 +59,11 @@ function Page() {
             const q = search.trim().toLowerCase();
             res = res.filter(
                 (c) =>
-                    c.complaint_id.toLowerCase().includes(q) ||
-                    c.room_id.toLowerCase().includes(q) ||
-                    c.tenant_name.toLowerCase().includes(q) ||
+                    c.id.toLowerCase().includes(q) ||
+                    (c.room?.roomNumber || "").toLowerCase().includes(q) ||
+                    (c.tenant.profile?.fullName || "")
+                        .toLowerCase()
+                        .includes(q) ||
                     c.category.toLowerCase().includes(q) ||
                     c.description.toLowerCase().includes(q),
             );
@@ -54,7 +75,7 @@ function Page() {
             const from = date.from.getTime();
             const to = date.to?.getTime() ?? Number.POSITIVE_INFINITY;
             res = res.filter((c) => {
-                const t = new Date(c.created_at).getTime();
+                const t = new Date(c.createdAt).getTime();
                 return t >= from && t <= to;
             });
         }
@@ -68,12 +89,12 @@ function Page() {
     const pageItems = filtered.slice(start, end);
 
     const totalCount = all.length;
-    const openCount = all.filter((c) => c.status === "open").length;
+    const pendingCount = all.filter((c) => c.status === "pending").length;
     const progressCount = all.filter((c) => c.status === "in_progress").length;
     const resolvedCount = all.filter((c) => c.status === "resolved").length;
 
     const statusLabel = (s: ComplaintStatus) =>
-        s === "open"
+        s === "pending"
             ? "Pending"
             : s === "in_progress"
               ? "In Progress"
@@ -105,6 +126,15 @@ function Page() {
 
     return (
         <div className="p-4 flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+                <h1 className="text-xl font-bold">Komplain</h1>
+                <Link href="/user/complaints/create">
+                    <Button className="rounded-full">
+                        <PlusIcon className="w-4 h-4 mr-2" /> Buat Komplain
+                    </Button>
+                </Link>
+            </div>
+
             <div className="grid grid-cols-4 gap-4">
                 <Card className="shadow-none">
                     <CardContent className="flex gap-2 justify-between">
@@ -126,9 +156,9 @@ function Page() {
                     <CardContent className="flex gap-2 justify-between">
                         <div className="flex flex-col">
                             <p className="text-sm text-muted-foreground">
-                                Open
+                                Pending
                             </p>
-                            <p className="text-xl font-bold">{openCount}</p>
+                            <p className="text-xl font-bold">{pendingCount}</p>
                         </div>
                         <IconSurface
                             bgClass="bg-amber-100"
@@ -202,35 +232,44 @@ function Page() {
                 }}
             />
             <div className="flex flex-col gap-4">
-                {pageItems.map((c) => (
-                    <ComplaintRow
-                        key={c.complaint_id}
-                        iconBgClass={categoryBg[c.category] ?? "bg-blue-100"}
-                        iconColor={
-                            categoryColor[c.category] ??
-                            "oklch(62.3% 0.214 259.815)"
-                        }
-                        categoryLabel={c.category}
-                        complaintId={c.complaint_id}
-                        titleLabel={toTitle(c.description)}
-                        roomLabel={`Kamar ${c.room_id}`}
-                        createdLabel={format(
-                            new Date(c.created_at),
-                            "dd MMM yyyy, HH:mm",
-                        )}
-                        resolvedLabel={
-                            c.status === "resolved"
-                                ? format(
-                                      new Date(c.updated_at),
-                                      "dd MMM yyyy, HH:mm",
-                                  )
-                                : undefined
-                        }
-                        description={c.description}
-                        status={c.status}
-                        statusLabel={statusLabel(c.status)}
-                    />
-                ))}
+                {loading ? (
+                    <div className="flex justify-center p-8">
+                        <Spinner />
+                    </div>
+                ) : (
+                    pageItems.map((c) => (
+                        <ComplaintRow
+                            key={c.id}
+                            iconBgClass={
+                                categoryBg[c.category] ?? "bg-blue-100"
+                            }
+                            iconColor={
+                                categoryColor[c.category] ??
+                                "oklch(62.3% 0.214 259.815)"
+                            }
+                            categoryLabel={c.category}
+                            complaintId={c.id}
+                            titleLabel={toTitle(c.description)}
+                            roomLabel={`Kamar ${c.room?.roomNumber || c.roomId || "-"}`}
+                            createdLabel={format(
+                                new Date(c.createdAt),
+                                "dd MMM yyyy, HH:mm",
+                            )}
+                            resolvedLabel={
+                                c.status === "resolved" && c.resolvedAt
+                                    ? format(
+                                          new Date(c.resolvedAt),
+                                          "dd MMM yyyy, HH:mm",
+                                      )
+                                    : undefined
+                            }
+                            description={c.description}
+                            status={c.status as any}
+                            statusLabel={statusLabel(c.status)}
+                            detailHref={`/user/complaints/${c.id}`}
+                        />
+                    ))
+                )}
                 <Pagination className="mt-2">
                     <PaginationContent>
                         <PaginationItem>

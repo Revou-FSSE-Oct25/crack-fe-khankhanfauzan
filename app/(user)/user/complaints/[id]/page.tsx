@@ -1,14 +1,10 @@
 "use client";
 
 import { getSession } from "@/actions/auth";
-import {
-    getMaintenanceById,
-    updateMaintenanceStatus,
-} from "@/services/maintenances";
-import { Maintenance, ComplaintStatus } from "@/types/maintenances";
+import { getMaintenanceById } from "@/services/maintenances";
+import { Maintenance } from "@/types/maintenances";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
 import {
     Card,
     CardContent,
@@ -33,18 +29,7 @@ import {
     TriangleAlertIcon,
     UserIcon,
     WrenchIcon,
-    UploadIcon,
-    XIcon,
 } from "lucide-react";
-import { toast } from "sonner";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 
 const badgeClassByStatus: Record<string, string> = {
     pending: "bg-blue-50 border-blue-200 text-blue-900",
@@ -107,111 +92,16 @@ export default function ComplaintDetailPage() {
     const [complaint, setComplaint] = useState<Maintenance | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
-    const [updating, setUpdating] = useState<boolean>(false);
-
-    // Form state
-    const { control, handleSubmit, reset } = useForm({
-        defaultValues: {
-            status: "pending" as ComplaintStatus,
-            adminNotes: "",
-        },
-    });
-
-    const [images, setImages] = useState<File[]>([]);
-    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
     useEffect(() => {
         const session = getSession();
         const token = session?.accessToken;
 
         getMaintenanceById(id, { token })
-            .then((value) => {
-                setComplaint(value.data);
-                if (value.data) {
-                    reset({
-                        status: value.data.status,
-                        adminNotes: value.data.adminNotes || "",
-                    });
-                }
-            })
+            .then((value) => setComplaint(value.data))
             .catch((e) => setErrorMsg(e.message))
             .finally(() => setLoading(false));
-    }, [id, reset]);
-
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const newFiles = Array.from(e.target.files);
-
-            if (images.length + newFiles.length > 5) {
-                toast.error("Maksimal 5 gambar yang diperbolehkan");
-                return;
-            }
-
-            const validFiles = newFiles.filter((file) => {
-                if (!file.type.startsWith("image/")) {
-                    toast.error(`${file.name} bukan file gambar valid`);
-                    return false;
-                }
-                if (file.size > 5 * 1024 * 1024) {
-                    toast.error(`${file.name} melebihi ukuran maksimal 5MB`);
-                    return false;
-                }
-                return true;
-            });
-
-            if (validFiles.length > 0) {
-                setImages((prev) => [...prev, ...validFiles]);
-
-                const newPreviews = validFiles.map((file) =>
-                    URL.createObjectURL(file),
-                );
-                setImagePreviews((prev) => [...prev, ...newPreviews]);
-            }
-        }
-    };
-
-    const removeImage = (index: number) => {
-        setImages((prev) => prev.filter((_, i) => i !== index));
-        URL.revokeObjectURL(imagePreviews[index]);
-        setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-    };
-
-    const onSubmit = async (data: any) => {
-        setUpdating(true);
-        try {
-            const session = getSession();
-            const token = session?.accessToken;
-
-            // If there are images, we MUST use FormData
-            if (images.length > 0) {
-                const payload = new FormData();
-                payload.append("status", data.status);
-                payload.append("adminNotes", data.adminNotes);
-                images.forEach((image) => {
-                    payload.append("images", image);
-                });
-
-                const res = await updateMaintenanceStatus(id, payload, {
-                    token,
-                });
-                setComplaint(res.data);
-
-                // Clear images after successful upload
-                setImages([]);
-                setImagePreviews([]);
-            } else {
-                // Regular JSON payload if no images
-                const res = await updateMaintenanceStatus(id, data, { token });
-                setComplaint(res.data);
-            }
-
-            toast.success("Status komplain berhasil diperbarui");
-        } catch (error: any) {
-            toast.error(error.message || "Gagal memperbarui status komplain");
-        } finally {
-            setUpdating(false);
-        }
-    };
+    }, [id]);
 
     if (loading) {
         return (
@@ -227,7 +117,7 @@ export default function ComplaintDetailPage() {
                 <p className="text-red-500 mb-4">
                     {errorMsg || "Komplain tidak ditemukan"}
                 </p>
-                <Link href="/admin/maintenances">
+                <Link href="/user/complaints">
                     <Button variant="outline">
                         Kembali ke Daftar Komplain
                     </Button>
@@ -242,7 +132,7 @@ export default function ComplaintDetailPage() {
     return (
         <div className="p-4 mx-auto space-y-6">
             <div className="flex items-center gap-4">
-                <Link href="/admin/maintenances">
+                <Link href="/user/complaints">
                     <Button
                         variant="ghost"
                         size="icon"
@@ -439,127 +329,7 @@ export default function ComplaintDetailPage() {
                         </CardContent>
                     </Card>
 
-                    {/* Update Status (Admin Only) */}
-                    <Card className="shadow-none border-primary/20">
-                        <CardHeader className="bg-primary/5 pb-3">
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <ShieldAlertIcon className="w-4 h-4 text-primary" />
-                                Update Status Komplain
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-4 space-y-4">
-                            <form
-                                onSubmit={handleSubmit(onSubmit)}
-                                className="space-y-4"
-                            >
-                                <div className="space-y-2">
-                                    <label className="text-xs font-medium text-muted-foreground">
-                                        Status
-                                    </label>
-                                    <Controller
-                                        name="status"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <Select
-                                                value={field.value}
-                                                onValueChange={field.onChange}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Pilih status" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="pending">
-                                                        Menunggu Diproses
-                                                    </SelectItem>
-                                                    <SelectItem value="in_progress">
-                                                        Sedang Dikerjakan
-                                                    </SelectItem>
-                                                    <SelectItem value="resolved">
-                                                        Selesai
-                                                    </SelectItem>
-                                                    <SelectItem value="rejected">
-                                                        Ditolak
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        )}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-medium text-muted-foreground">
-                                        Catatan Admin
-                                    </label>
-                                    <Controller
-                                        name="adminNotes"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <Textarea
-                                                placeholder="Tambahkan catatan untuk teknisi atau tenant..."
-                                                {...field}
-                                                rows={3}
-                                            />
-                                        )}
-                                    />
-                                </div>
-                                <div className="space-y-3">
-                                    <label className="text-xs font-medium text-muted-foreground">
-                                        Lampiran Foto (Opsional, maks 5)
-                                    </label>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                        {imagePreviews.map((preview, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="relative aspect-square rounded-lg overflow-hidden border group"
-                                            >
-                                                <Image
-                                                    src={preview}
-                                                    alt={`Preview ${idx + 1}`}
-                                                    fill
-                                                    className="object-cover"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        removeImage(idx)
-                                                    }
-                                                    className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                >
-                                                    <XIcon className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ))}
-
-                                        {images.length < 5 && (
-                                            <label className="flex flex-col items-center justify-center aspect-square border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                                                <UploadIcon className="w-6 h-6 text-gray-400 mb-2" />
-                                                <span className="text-xs text-gray-500">
-                                                    Tambah Foto
-                                                </span>
-                                                <input
-                                                    type="file"
-                                                    className="hidden"
-                                                    accept="image/*"
-                                                    multiple
-                                                    onChange={handleImageChange}
-                                                />
-                                            </label>
-                                        )}
-                                    </div>
-                                </div>
-                                <Button
-                                    type="submit"
-                                    className="w-full mt-2"
-                                    disabled={updating}
-                                >
-                                    {updating ? (
-                                        <Spinner className="w-4 h-4 mr-2" />
-                                    ) : null}
-                                    Simpan Perubahan
-                                </Button>
-                            </form>
-                        </CardContent>
-                    </Card>
-
+                    {/* Info Kamar */}
                     <Card className="shadow-none">
                         <CardHeader className="pb-3 border-b border-gray-100">
                             <CardTitle className="text-base flex items-center gap-2">
