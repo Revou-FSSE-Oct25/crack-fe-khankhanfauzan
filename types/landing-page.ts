@@ -10,6 +10,7 @@ export type LandingPageCheapestRoom = {
 }
 
 export type LandingpageFacility = {
+    id: string,
     name: string;
     iconUrl: string | null;
 }
@@ -20,6 +21,7 @@ export type LandingPageReviewStats = {
 }
 
 export type LandingPageFeaturedReview = {
+    id: string,
     rating: number;
     comment: string | null;
     booking: {

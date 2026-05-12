@@ -124,7 +124,7 @@ function page() {
                         <h2 className="text-lg font-semibold">Fasilitas</h2>
                         <div className="grid grid-cols-2 gap-3">
                             {data.facilities.map((facility) => (
-                                <Card key={facility.name}>
+                                <Card key={facility.id}>
                                     <CardContent className="flex gap-2 items-center">
                                         <IconSurface
                                             bgClass="bg-accent"
@@ -152,7 +152,7 @@ function page() {
                         </div>
                         <div className="grid grid-cols-1 gap-4">
                             {data.featuredReviews.map((review) => (
-                                <Card>
+                                <Card key={review.id}>
                                     <CardContent className="flex gap-4 items-start">
                                         <Avatar size="lg">
                                             <AvatarImage src="https://i.pravatar.cc/300" />
@@ -173,6 +173,7 @@ function page() {
                                                     length: review.rating,
                                                 }).map((_, i) => (
                                                     <StarIcon
+                                                        key={i}
                                                         fill="orange"
                                                         stroke="0"
                                                     />
