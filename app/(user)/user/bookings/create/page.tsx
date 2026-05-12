@@ -28,6 +28,16 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { getMe } from "@/services/auth";
 import { fetchRoomById } from "@/services/rooms";
 import { createBooking } from "@/services/bookings";
@@ -62,6 +72,15 @@ function BookingForm() {
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Alert dialog state
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [alertConfig, setAlertConfig] = useState<{
+        title: string;
+        description: string;
+        type: "error" | "confirm";
+        onConfirm?: () => void;
+    } | null>(null);
 
     const {
         control,
@@ -133,18 +152,23 @@ function BookingForm() {
     const onSubmit = async (data: BookingFormInputs) => {
         if (!room || !user) return;
 
-        const confirm = window.confirm(
-            "Apakah anda sudah yakin dengan data tersebut?",
-        );
-        if (!confirm) return;
+        setAlertConfig({
+            title: "Konfirmasi Booking",
+            description: "Apakah anda sudah yakin dengan data tersebut?",
+            type: "confirm",
+            onConfirm: () => proceedBooking(data),
+        });
+        setAlertOpen(true);
+    };
 
+    const proceedBooking = async (data: BookingFormInputs) => {
         setIsSubmitting(true);
         setErrorMsg(null);
         try {
             const session = getSession();
             const response = await createBooking(
                 {
-                    roomId: room.id.toString(), // assuming roomId is needed as string
+                    roomId: room!.id.toString(), // assuming roomId is needed as string
                     rentType: data.rentType,
                     duration: Number(data.duration),
                     startDate: new Date(data.startDate).toISOString(),
@@ -157,16 +181,17 @@ function BookingForm() {
             }
         } catch (error: any) {
             console.error("Booking error:", error);
-            setErrorMsg(
+            const msg =
                 error?.response?.data?.message ||
-                    error.message ||
-                    "Gagal melakukan booking",
-            );
-            alert(
-                error?.response?.data?.message ||
-                    error.message ||
-                    "Gagal melakukan booking",
-            );
+                error.message ||
+                "Gagal melakukan booking";
+            setErrorMsg(msg);
+            setAlertConfig({
+                title: "Gagal Booking",
+                description: msg,
+                type: "error",
+            });
+            setAlertOpen(true);
         } finally {
             setIsSubmitting(false);
         }
@@ -176,6 +201,40 @@ function BookingForm() {
 
     return (
         <div className="p-4 max-w-7xl mx-auto space-y-4">
+            <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            {alertConfig?.title}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {alertConfig?.description}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        {alertConfig?.type === "confirm" && (
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                        )}
+                        <AlertDialogAction
+                            onClick={() => {
+                                if (
+                                    alertConfig?.type === "confirm" &&
+                                    alertConfig.onConfirm
+                                ) {
+                                    alertConfig.onConfirm();
+                                } else {
+                                    setAlertOpen(false);
+                                }
+                            }}
+                        >
+                            {alertConfig?.type === "confirm"
+                                ? "Ya, Lanjutkan"
+                                : "Tutup"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             <div>
                 <h1 className="text-lg sm:text-xl font-semibold">
                     {isExtension ? "Perpanjang Sewa" : "Booking"}

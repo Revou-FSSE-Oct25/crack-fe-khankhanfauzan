@@ -36,6 +36,16 @@ import {
     Loader2Icon,
     UploadIcon,
 } from "lucide-react";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { getSession } from "@/actions/auth";
 import { getBookingById } from "@/services/bookings";
 import { uploadPaymentProof } from "@/services/transactions";
@@ -72,6 +82,15 @@ function BookingPaymentPage() {
     const [file, setFile] = useState<File | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Alert dialog state
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [alertConfig, setAlertConfig] = useState<{
+        title: string;
+        description: string;
+        type: "error" | "confirm" | "success";
+        onConfirm?: () => void;
+    } | null>(null);
+
     useEffect(() => {
         if (!bookingId) return;
         const session = getSession();
@@ -104,39 +123,64 @@ function BookingPaymentPage() {
 
         const invoice = booking.invoices?.[0];
         if (!invoice) {
-            alert("Invoice tidak ditemukan untuk booking ini.");
+            setAlertConfig({
+                title: "Error",
+                description: "Invoice tidak ditemukan untuk booking ini.",
+                type: "error",
+            });
+            setAlertOpen(true);
             return;
         }
 
         if (!file) {
-            alert("Silakan upload bukti pembayaran terlebih dahulu.");
+            setAlertConfig({
+                title: "File Diperlukan",
+                description: "Silakan upload bukti pembayaran terlebih dahulu.",
+                type: "error",
+            });
+            setAlertOpen(true);
             return;
         }
 
-        const confirm = window.confirm(
-            "Apakah anda yakin ingin mengirim bukti pembayaran ini?",
-        );
-        if (!confirm) return;
+        setAlertConfig({
+            title: "Konfirmasi",
+            description:
+                "Apakah anda yakin ingin mengirim bukti pembayaran ini?",
+            type: "confirm",
+            onConfirm: () => proceedPayment(invoice.id),
+        });
+        setAlertOpen(true);
+    };
 
+    const proceedPayment = async (invoiceId: string) => {
         setIsSubmitting(true);
         try {
             const session = getSession();
             const formData = new FormData();
-            formData.append("invoiceId", invoice.id);
+            formData.append("invoiceId", invoiceId);
             formData.append("amount", String(dueNow));
             formData.append("paymentMethod", method);
-            formData.append("file", file);
+            formData.append("file", file!);
 
             await uploadPaymentProof(formData, { token: session?.accessToken });
-            alert("Bukti pembayaran berhasil diunggah!");
-            router.push("/user/bookings");
+            setAlertConfig({
+                title: "Berhasil",
+                description: "Bukti pembayaran berhasil diunggah!",
+                type: "success",
+                onConfirm: () => router.push("/user/bookings"),
+            });
+            setAlertOpen(true);
         } catch (error: any) {
             console.error("Upload payment error:", error);
-            alert(
-                error?.response?.data?.message ||
+            setAlertConfig({
+                title: "Gagal",
+                description:
+                    error?.response?.data?.message ||
                     error.message ||
                     "Gagal mengunggah bukti pembayaran",
-            );
+                type: "error",
+            });
+            setAlertOpen(true);
         } finally {
             setIsSubmitting(false);
         }
@@ -156,6 +200,41 @@ function BookingPaymentPage() {
 
     return (
         <div className="px-4 py-4 max-w-7xl mx-auto space-y-4">
+            <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            {alertConfig?.title}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {alertConfig?.description}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        {alertConfig?.type === "confirm" && (
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                        )}
+                        <AlertDialogAction
+                            onClick={() => {
+                                if (
+                                    (alertConfig?.type === "confirm" ||
+                                        alertConfig?.type === "success") &&
+                                    alertConfig.onConfirm
+                                ) {
+                                    alertConfig.onConfirm();
+                                } else {
+                                    setAlertOpen(false);
+                                }
+                            }}
+                        >
+                            {alertConfig?.type === "confirm"
+                                ? "Ya, Kirim"
+                                : "Tutup"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             <div className="flex items-center justify-between">
                 <h1 className="text-lg sm:text-xl font-semibold">
                     Pembayaran Booking

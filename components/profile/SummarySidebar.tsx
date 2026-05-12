@@ -16,6 +16,15 @@ import type { User } from "@/types/users";
 import { updateProfile } from "@/services/users";
 import { getSession } from "@/actions/auth";
 import { TenantDashboardData } from "@/types/tenant-dashboard";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatRupiah } from "@/utils/format";
 
 function initials(name?: string) {
@@ -44,6 +53,13 @@ export function SummarySidebar({
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Alert dialog state
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [alertConfig, setAlertConfig] = useState<{
+        title: string;
+        description: string;
+    } | null>(null);
+
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -53,7 +69,11 @@ export function SummarySidebar({
         const userId = s?.userId;
 
         if (!token || !userId) {
-            alert("Sesi tidak ditemukan. Silakan login kembali.");
+            setAlertConfig({
+                title: "Sesi Tidak Ditemukan",
+                description: "Silakan login kembali.",
+            });
+            setAlertOpen(true);
             return;
         }
 
@@ -70,7 +90,11 @@ export function SummarySidebar({
             // Profile updated successfully
         } catch (error) {
             console.error("Gagal mengunggah foto profil:", error);
-            alert("Gagal mengunggah foto profil. Silakan coba lagi.");
+            setAlertConfig({
+                title: "Gagal Mengunggah",
+                description: "Gagal mengunggah foto profil. Silakan coba lagi.",
+            });
+            setAlertOpen(true);
             // Revert optimistic update
             setAvatarUrl(user?.document.fotoProfileUrl || undefined);
         } finally {
@@ -83,6 +107,24 @@ export function SummarySidebar({
 
     return (
         <>
+            <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            {alertConfig?.title}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {alertConfig?.description}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => setAlertOpen(false)}>
+                            Tutup
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             <Card className="shadow-none">
                 <CardContent className="flex flex-col gap-4 items-center justify-center text-center">
                     <div className="relative">
