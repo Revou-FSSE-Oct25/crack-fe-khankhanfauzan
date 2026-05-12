@@ -152,27 +152,34 @@ export function PersonalInfoSection({ user }: { user: User | null }) {
             return;
         }
 
-        const formData = new FormData();
-        if (values.fullname) formData.append("fullName", values.fullname);
-        if (values.whatsappNumber)
-            formData.append("whatsappNumber", values.whatsappNumber);
-        if (values.marital_status)
-            formData.append("maritalStatus", values.marital_status);
-
-        if (values.ktpFile) {
-            formData.append("fotoKtp", values.ktpFile);
-        }
-
-        if (values.marital_status === "married" && values.marriageFile) {
-            formData.append("fotoBukuNikah", values.marriageFile);
-        }
-
         try {
+            const formData = new FormData();
+
+            // Append text fields
+            if (values.fullname) formData.append("fullName", values.fullname);
+            if (values.whatsappNumber)
+                formData.append("whatsappNumber", values.whatsappNumber);
+            if (values.marital_status)
+                formData.append("maritalStatus", values.marital_status);
+
+            // Append files
+            if (values.ktpFile) {
+                formData.append("fotoKtp", values.ktpFile);
+            }
+
+            if (values.marital_status === "married" && values.marriageFile) {
+                formData.append("fotoBukuNikah", values.marriageFile);
+            }
+
             await updateProfile(userId.toString(), formData, { token });
+
             setIsEditing(false);
             setBanner({ type: "success", text: "Profil berhasil diperbarui" });
-        } catch {
-            setBanner({ type: "error", text: "Gagal memperbarui profil" });
+        } catch (error: any) {
+            setBanner({
+                type: "error",
+                text: error?.message || "Gagal memperbarui profil",
+            });
         }
     }
 
@@ -306,7 +313,9 @@ export function PersonalInfoSection({ user }: { user: User | null }) {
                             )}
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="ktp">KTP</FieldLabel>
+                            <FieldLabel htmlFor="ktp">
+                                KTP <span className="text-destructive">*</span>
+                            </FieldLabel>
                             {isEditing ? (
                                 <div className="flex items-center gap-4">
                                     <Button

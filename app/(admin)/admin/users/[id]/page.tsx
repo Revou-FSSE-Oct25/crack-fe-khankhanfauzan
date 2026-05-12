@@ -167,10 +167,10 @@ export default function Page() {
             // 2. Upload Files if any
             if (data.avatarFile || data.ktpFile || data.marriageFile) {
                 const formData = new FormData();
-                if (data.avatarFile) formData.append("avatar", data.avatarFile);
-                if (data.ktpFile) formData.append("ktp", data.ktpFile);
+                if (data.avatarFile) formData.append("fotoProfile", data.avatarFile);
+                if (data.ktpFile) formData.append("fotoKtp", data.ktpFile);
                 if (data.marriageFile)
-                    formData.append("marriage", data.marriageFile);
+                    formData.append("fotoBukuNikah", data.marriageFile);
 
                 try {
                     await updateProfile(id, formData, { token });
