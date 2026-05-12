@@ -108,7 +108,7 @@ function Page() {
                             title="Belum Ada Kamar Aktif"
                             description="Anda belum memiliki kamar yang sedang disewa atau booking yang aktif."
                             action={
-                                <Link href="/">
+                                <Link href="/rooms">
                                     <Button>Cari Kamar Sekarang</Button>
                                 </Link>
                             }
