@@ -20,6 +20,7 @@ import { formatDate, formatRupiah } from "@/utils/format";
 import Link from "next/link";
 import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Page() {
     const [search, setSearch] = React.useState("");
@@ -170,14 +171,36 @@ export default function Page() {
                                 </thead>
                                 <tbody className="[&>tr:last-child]:border-0">
                                     {loading ? (
-                                        <tr>
-                                            <td
-                                                colSpan={7}
-                                                className="text-center py-8"
-                                            >
-                                                <Spinner className="mx-auto" />
-                                            </td>
-                                        </tr>
+                                        Array.from({ length: 5 }).map(
+                                            (_, i) => (
+                                                <tr
+                                                    className="border-b"
+                                                    key={`sk-${i}`}
+                                                >
+                                                    <td className="px-4 py-3">
+                                                        <Skeleton className="h-4 w-16" />
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Skeleton className="h-4 w-32" />
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Skeleton className="h-4 w-24" />
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Skeleton className="h-4 w-24" />
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Skeleton className="h-4 w-24" />
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Skeleton className="h-6 w-20 rounded-full" />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right">
+                                                        <Skeleton className="h-8 w-16 ml-auto rounded" />
+                                                    </td>
+                                                </tr>
+                                            ),
+                                        )
                                     ) : pageItems.length === 0 ? (
                                         <tr>
                                             <td
