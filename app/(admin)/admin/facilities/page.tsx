@@ -16,49 +16,55 @@ import { Facility } from "@/types/facilities";
 import { fetchFacilities } from "@/services/facilities";
 import { PencilIcon } from "lucide-react";
 import { getSession } from "@/actions/auth";
+import { Skeleton } from "@/components/ui/skeleton";
+
+import { ApiPaginatedResponse } from "@/types/types";
 
 export default function Page() {
     const [query, setQuery] = useState("");
-    const [facilities, setFacilities] = useState<Facility[]>([]);
+    const [debouncedQuery, setDebouncedQuery] = useState("");
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-
-    // Filter state
-    const filteredFacilities = facilities.filter(
-        (f) =>
-            f.name.toLowerCase().includes(query.toLowerCase()) ||
-            (f.description &&
-                f.description.toLowerCase().includes(query.toLowerCase())),
-    );
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
-    const totalPages = Math.ceil(filteredFacilities.length / itemsPerPage);
 
-    const paginatedFacilities = filteredFacilities.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage,
-    );
+    const [facilitiesResponse, setFacilitiesResponse] =
+        useState<ApiPaginatedResponse<Facility[]> | null>(null);
+
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedQuery(query);
+            setCurrentPage(1);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [query]);
 
     useEffect(() => {
         setLoading(true);
         const session = getSession();
         const token = session?.accessToken;
 
-        fetchFacilities({ token })
+        fetchFacilities(
+            {
+                page: currentPage,
+                perPage: itemsPerPage,
+                search: debouncedQuery,
+            },
+            { token },
+        )
             .then((value) => {
-                setFacilities(value.data);
+                setFacilitiesResponse(value);
                 setErrorMsg(null);
             })
             .catch((e) => setErrorMsg(e.message))
             .finally(() => setLoading(false));
-    }, []);
+    }, [currentPage, debouncedQuery]);
 
-    // Reset pagination when query changes
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [query]);
+    const paginatedFacilities = facilitiesResponse?.data || [];
+    const totalPages = facilitiesResponse?.meta?.totalPages || 1;
 
     return (
         <div className="bg-muted h-full">
@@ -104,14 +110,27 @@ export default function Page() {
                                 </thead>
                                 <tbody className="[&>tr:last-child]:border-0">
                                     {loading ? (
-                                        <tr>
-                                            <td
-                                                colSpan={4}
-                                                className="text-center py-8 text-muted-foreground"
-                                            >
-                                                Memuat data...
-                                            </td>
-                                        </tr>
+                                        Array.from({ length: 5 }).map(
+                                            (_, i) => (
+                                                <tr
+                                                    className="border-b"
+                                                    key={`sk-${i}`}
+                                                >
+                                                    <td className="px-4 py-3">
+                                                        <Skeleton className="h-4 w-12" />
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Skeleton className="h-4 w-32" />
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Skeleton className="h-4 w-48" />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right">
+                                                        <Skeleton className="h-8 w-8 ml-auto rounded" />
+                                                    </td>
+                                                </tr>
+                                            ),
+                                        )
                                     ) : errorMsg ? (
                                         <tr>
                                             <td

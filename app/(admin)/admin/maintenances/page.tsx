@@ -20,62 +20,52 @@ import { Maintenance } from "@/types/maintenances";
 import { formatDate } from "@/utils/format";
 import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+
+import { ApiPaginatedResponse } from "@/types/types";
 
 export default function Page() {
     const [search, setSearch] = React.useState("");
+    const [debouncedSearch, setDebouncedSearch] = React.useState("");
     const [status, setStatus] = React.useState("all");
     const [date, setDate] = React.useState<DateRange | undefined>();
     const [page, setPage] = React.useState(1);
+    const pageSize = 10;
 
-    const [maintenances, setMaintenances] = useState<Maintenance[] | null>(
-        null,
-    );
+    const [maintenancesResponse, setMaintenancesResponse] =
+        useState<ApiPaginatedResponse<Maintenance[]> | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+            setPage(1);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [search]);
+
+    useEffect(() => {
         const session = getSession();
-        fetchMaintenances({}, { token: session?.accessToken })
-            .then((res) => setMaintenances(res.data))
+        setLoading(true);
+        fetchMaintenances(
+            {
+                page,
+                perPage: pageSize,
+                search: debouncedSearch,
+                status: status === "all" ? undefined : (status as any),
+                startDate: date?.from ? date.from.toISOString() : undefined,
+                endDate: date?.to ? date.to.toISOString() : undefined,
+            },
+            { token: session?.accessToken },
+        )
+            .then((res) => setMaintenancesResponse(res))
             .catch((err) => console.error(err))
             .finally(() => setLoading(false));
-    }, []);
+    }, [debouncedSearch, status, page, date]);
 
-    const all = maintenances || [];
-    const pageSize = 10;
-
-    const filtered = React.useMemo(() => {
-        let res = all;
-        if (search.trim()) {
-            const q = search.trim().toLowerCase();
-            res = res.filter(
-                (m) =>
-                    m.id.toLowerCase().includes(q) ||
-                    (m.room?.roomNumber || "").toLowerCase().includes(q) ||
-                    (m.tenant?.profile?.fullName || "")
-                        .toLowerCase()
-                        .includes(q) ||
-                    m.category.toLowerCase().includes(q),
-            );
-        }
-        if (status !== "all") {
-            res = res.filter((m) => m.status === status);
-        }
-        if (date?.from) {
-            const from = date.from.getTime();
-            const to = date.to?.getTime() ?? Number.POSITIVE_INFINITY;
-            res = res.filter((m) => {
-                const t = new Date(m.createdAt).getTime();
-                return t >= from && t <= to;
-            });
-        }
-        return res;
-    }, [all, search, status, date]);
-
-    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-    const currentPage = Math.min(page, totalPages);
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    const pageItems = filtered.slice(start, end);
+    const pageItems = maintenancesResponse?.data || [];
+    const totalPages = maintenancesResponse?.meta?.totalPages || 1;
+    const currentPage = maintenancesResponse?.meta?.page || 1;
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -213,14 +203,36 @@ export default function Page() {
                                 </thead>
                                 <tbody className="[&>tr:last-child]:border-0">
                                     {loading ? (
-                                        <tr>
-                                            <td
-                                                colSpan={7}
-                                                className="text-center py-8"
-                                            >
-                                                <Spinner className="mx-auto" />
-                                            </td>
-                                        </tr>
+                                        Array.from({ length: 5 }).map(
+                                            (_, i) => (
+                                                <tr
+                                                    className="border-b"
+                                                    key={`sk-${i}`}
+                                                >
+                                                    <td className="px-4 py-3">
+                                                        <Skeleton className="h-4 w-16" />
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Skeleton className="h-4 w-32" />
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Skeleton className="h-4 w-16" />
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Skeleton className="h-4 w-32" />
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Skeleton className="h-4 w-24" />
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Skeleton className="h-6 w-24 rounded-full" />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right">
+                                                        <Skeleton className="h-8 w-16 ml-auto rounded" />
+                                                    </td>
+                                                </tr>
+                                            ),
+                                        )
                                     ) : pageItems.length === 0 ? (
                                         <tr>
                                             <td

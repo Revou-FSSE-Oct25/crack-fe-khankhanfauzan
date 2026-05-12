@@ -9,7 +9,7 @@ export async function fetchRooms(params?: GetRoomsParams, opts?: { token?: strin
   if (cleanParams.search === "") {
     delete cleanParams.search;
   }
-  if (cleanParams.status === undefined) {
+  if (cleanParams.status === undefined || cleanParams.status === "all") {
     delete cleanParams.status;
   }
 

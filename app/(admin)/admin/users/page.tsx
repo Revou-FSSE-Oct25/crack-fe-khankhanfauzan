@@ -36,13 +36,19 @@ export default function Page() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [query, setQuery] = useState("");
-    const [statusFilter, setStatusFilter] = useState<
-        "semua" | "active" | "inactive"
-    >("semua");
-    const [date, setDate] = useState<DateRange | undefined>();
+    const [roleFilter, setRoleFilter] = useState<"semua" | "admin" | "tenant">(
+        "semua",
+    );
     const [page, setPage] = useState(1);
     const [perPage] = useState(20);
     const [meta, setMeta] = useState<BasePaginationMeta | null>(null);
+
+    // Debounce query
+    const [debouncedQuery, setDebouncedQuery] = useState("");
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedQuery(query), 500);
+        return () => clearTimeout(timer);
+    }, [query]);
 
     useEffect(() => {
         let aborted = false;
@@ -57,7 +63,8 @@ export default function Page() {
                     {
                         page,
                         perPage,
-                        search: query || undefined,
+                        search: debouncedQuery || undefined,
+                        role: roleFilter === "semua" ? undefined : roleFilter,
                     },
                     { token },
                 );
@@ -90,26 +97,12 @@ export default function Page() {
         return () => {
             aborted = true;
         };
-    }, [page, perPage, query]);
+    }, [page, perPage, debouncedQuery, roleFilter]);
 
     const filtered = useMemo(() => {
         let arr = users;
-        if (statusFilter !== "semua") {
-            arr = arr.filter((u) => u.status === statusFilter);
-        }
-        if (date?.from || date?.to) {
-            const from = date?.from?.getTime();
-            const to = date?.to?.getTime();
-            arr = arr.filter((u) => {
-                if (!u.joinedAt) return false;
-                const t = new Date(u.joinedAt).getTime();
-                if (from !== undefined && t < from) return false;
-                if (to !== undefined && t > to) return false;
-                return true;
-            });
-        }
         return arr;
-    }, [users, statusFilter, date]);
+    }, [users]);
 
     const lastPage = meta?.totalPages ?? 1;
     const canPrev = page > 1;
@@ -167,18 +160,18 @@ export default function Page() {
                             //     onChange: setDate,
                             // }}
                             select={{
-                                value: statusFilter,
+                                value: roleFilter,
                                 onChange: (v) => {
-                                    setStatusFilter(
-                                        v as "semua" | "active" | "inactive",
+                                    setRoleFilter(
+                                        v as "semua" | "admin" | "tenant",
                                     );
                                     setPage(1);
                                 },
-                                placeholder: "Status",
+                                placeholder: "Peran",
                                 options: [
                                     { value: "semua", label: "Semua" },
-                                    { value: "active", label: "Aktif" },
-                                    { value: "inactive", label: "Nonaktif" },
+                                    { value: "admin", label: "Admin" },
+                                    { value: "tenant", label: "Tenant" },
                                 ],
                                 triggerClassName: "w-36",
                             }}

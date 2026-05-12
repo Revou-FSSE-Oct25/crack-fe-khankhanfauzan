@@ -28,70 +28,64 @@ import { fetchMaintenances } from "@/services/maintenances";
 import { ComplaintStatus, Maintenance } from "@/types/maintenances";
 import Link from "next/link";
 import { Spinner } from "@/components/ui/spinner";
+import { EmptyState } from "@/components/ui/empty-state";
+
+import { ApiPaginatedResponse } from "@/types/types";
 
 function Page() {
     const [search, setSearch] = React.useState("");
+    const [debouncedSearch, setDebouncedSearch] = React.useState("");
     const [date, setDate] = React.useState<DateRange | undefined>();
     const [status, setStatus] = React.useState<ComplaintStatus | "semua">(
         "semua",
     );
     const [page, setPage] = React.useState(1);
+    const pageSize = 10;
 
-    const [maintenances, setMaintenances] = useState<Maintenance[] | null>(
-        null,
-    );
+    const [maintenancesResponse, setMaintenancesResponse] =
+        useState<ApiPaginatedResponse<Maintenance[]> | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+            setPage(1);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [search]);
+
+    useEffect(() => {
         const session = getSession();
-        fetchMaintenances({}, { token: session?.accessToken })
-            .then((res) => setMaintenances(res.data))
+        setLoading(true);
+        fetchMaintenances(
+            {
+                page,
+                perPage: pageSize,
+                search: debouncedSearch,
+                status: status === "semua" ? undefined : status,
+                startDate: date?.from ? date.from.toISOString() : undefined,
+                endDate: date?.to ? date.to.toISOString() : undefined,
+            },
+            { token: session?.accessToken },
+        )
+            .then((res) => setMaintenancesResponse(res))
             .catch((err) => console.error(err))
             .finally(() => setLoading(false));
-    }, []);
+    }, [debouncedSearch, status, page, date]);
 
-    const all = maintenances || [];
-    const pageSize = 10;
+    const pageItems = maintenancesResponse?.data || [];
+    const totalPages = maintenancesResponse?.meta?.totalPages || 1;
+    const currentPage = maintenancesResponse?.meta?.page || 1;
 
-    const filtered = React.useMemo(() => {
-        let res = all;
-        if (search.trim()) {
-            const q = search.trim().toLowerCase();
-            res = res.filter(
-                (c) =>
-                    c.id.toLowerCase().includes(q) ||
-                    (c.room?.roomNumber || "").toLowerCase().includes(q) ||
-                    (c.tenant.profile?.fullName || "")
-                        .toLowerCase()
-                        .includes(q) ||
-                    c.category.toLowerCase().includes(q) ||
-                    c.description.toLowerCase().includes(q),
-            );
-        }
-        if (status !== "semua") {
-            res = res.filter((c) => c.status === status);
-        }
-        if (date?.from) {
-            const from = date.from.getTime();
-            const to = date.to?.getTime() ?? Number.POSITIVE_INFINITY;
-            res = res.filter((c) => {
-                const t = new Date(c.createdAt).getTime();
-                return t >= from && t <= to;
-            });
-        }
-        return res;
-    }, [all, search, status, date]);
-
-    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-    const currentPage = Math.min(page, totalPages);
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    const pageItems = filtered.slice(start, end);
-
-    const totalCount = all.length;
-    const pendingCount = all.filter((c) => c.status === "open").length;
-    const progressCount = all.filter((c) => c.status === "in_progress").length;
-    const resolvedCount = all.filter((c) => c.status === "resolved").length;
+    // TODO: Need real dashboard stats for total, pending, progress, resolved
+    const totalCount = maintenancesResponse?.meta?.totalItems || 0;
+    const pendingCount = pageItems.filter((c) => c.status === "open").length;
+    const progressCount = pageItems.filter(
+        (c) => c.status === "in_progress",
+    ).length;
+    const resolvedCount = pageItems.filter(
+        (c) => c.status === "resolved",
+    ).length;
 
     const statusLabel = (s: ComplaintStatus) =>
         s === "open"
@@ -236,7 +230,7 @@ function Page() {
                     <div className="flex justify-center p-8">
                         <Spinner />
                     </div>
-                ) : (
+                ) : pageItems.length > 0 ? (
                     pageItems.map((c) => (
                         <ComplaintRow
                             key={c.id}
@@ -269,6 +263,13 @@ function Page() {
                             detailHref={`/user/complaints/${c.id}`}
                         />
                     ))
+                ) : (
+                    <EmptyState
+                        icon={WrenchIcon}
+                        title="Belum Ada Komplain"
+                        description="Anda belum memiliki riwayat komplain apa pun saat ini."
+                        className="p-4"
+                    />
                 )}
                 <Pagination className="mt-2">
                     <PaginationContent>

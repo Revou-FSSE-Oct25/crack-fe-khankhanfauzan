@@ -69,7 +69,10 @@ export interface Booking {
 }
 
 export interface GetBookingsParams extends PaginationParams {
-    statis?: string;
+    status?: string;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
 }
 
 

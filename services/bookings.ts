@@ -9,8 +9,14 @@ export async function createBooking(payload: CreateBookingPayload, opts?: { toke
 }
 
 export async function fetchBookings(params?: GetBookingsParams, opts?: { token?: string }) {
+    const cleanParams: any = { ...params };
+    if (cleanParams.search === "") delete cleanParams.search;
+    if (cleanParams.status === "semua" || cleanParams.status === "") delete cleanParams.status;
+    if (cleanParams.startDate === "") delete cleanParams.startDate;
+    if (cleanParams.endDate === "") delete cleanParams.endDate;
+
     return http.get<ApiPaginatedResponse<Booking[]>>("/bookings", {
-        query: params,
+        query: cleanParams,
         headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,
     });
 }

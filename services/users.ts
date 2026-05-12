@@ -3,9 +3,13 @@ import { ApiPaginatedResponse, ApiResponse } from "@/types/types";
 import type { User, UpdateUserPayload, CreateUserPayload, GetUsersParams } from "@/types/users";
 
 export async function fetchUsers(params?: GetUsersParams, opts?: { token?: string }) {
+    const cleanParams: any = { ...params };
+    if (cleanParams.search === "") delete cleanParams.search;
+    if (cleanParams.role === "semua" || cleanParams.role === "") delete cleanParams.role;
+
     return http.get<ApiPaginatedResponse<User[]>>("/users", {
         cache: "no-store",
-        query: params,
+        query: cleanParams,
         headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,
     });
 }

@@ -41,7 +41,7 @@ function RoomsPage() {
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            setFilters((prev) => ({ ...prev, search: searchTerm }));
+            setFilters((prev) => ({ ...prev, search: searchTerm, page: 1 }));
         }, 500);
         return () => clearTimeout(timer);
     }, [searchTerm]);

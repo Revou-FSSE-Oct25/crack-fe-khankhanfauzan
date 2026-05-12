@@ -31,9 +31,13 @@ import { formatDate, formatRupiah } from "@/utils/format";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+
+import { ApiPaginatedResponse } from "@/types/types";
 
 function Page() {
     const [search, setSearch] = React.useState("");
+    const [debouncedSearch, setDebouncedSearch] = React.useState("");
     const [status, setStatus] = React.useState<BookingStatus | "semua">(
         "semua",
     );
@@ -41,49 +45,49 @@ function Page() {
     const [date, setDate] = React.useState<DateRange | undefined>();
 
     const router = useRouter();
+    const pageSize = 10;
 
-    const all = MOCK_BOOKING_HISTORY.data;
-    const pageSize = MOCK_BOOKING_HISTORY.meta.limit;
-
-    const filtered = React.useMemo(() => {
-        let res = all;
-        if (search.trim()) {
-            const q = search.trim().toLowerCase();
-            res = res.filter(
-                (b) =>
-                    b.booking_id.toLowerCase().includes(q) ||
-                    b.room.room_id.toLowerCase().includes(q) ||
-                    b.room.room_type.toLowerCase().includes(q),
-            );
-        }
-        if (status !== "semua") {
-            res = res.filter((b) => b.status === status);
-        }
-        return res;
-    }, [all, search, status]);
-
-    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-    const currentPage = Math.min(page, totalPages);
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    const pageItems = filtered.slice(start, end);
-
-    const [booking, setBooking] = useState<Booking[] | null>(null);
+    const [bookingResponse, setBookingResponse] = useState<ApiPaginatedResponse<
+        Booking[]
+    > | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+            setPage(1);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [search]);
 
     useEffect(() => {
         const session = getSession();
         const token = session?.accessToken;
 
-        fetchBookings({}, { token: token })
-            .then((value) => setBooking(value.data))
+        setLoading(true);
+        fetchBookings(
+            {
+                page,
+                perPage: pageSize,
+                search: debouncedSearch,
+                status: status === "semua" ? undefined : status,
+                startDate: date?.from ? date.from.toISOString() : undefined,
+                endDate: date?.to ? date.to.toISOString() : undefined,
+            },
+            { token },
+        )
+            .then((value) => setBookingResponse(value))
             .catch((e) => setErrorMsg(e.message))
             .finally(() => setLoading(false));
-    }, []);
+    }, [debouncedSearch, status, page, date]);
+
+    const booking = bookingResponse?.data || [];
+    const totalPages = bookingResponse?.meta?.totalPages || 1;
+    const currentPage = bookingResponse?.meta?.page || 1;
 
     return (
-        <div className="p-4 flex flex-col gap-6">
+        <div className="p-4 flex flex-col gap-6 ">
             <div className="flex items-center justify-between">
                 <h1 className="text-xl font-bold">Booking</h1>
                 <Link href="/rooms">
@@ -169,52 +173,61 @@ function Page() {
                 }}
             />
             <div className="flex flex-col gap-4">
-                {booking?.map((value) => {
-                    return (
-                        <BookingRow
-                            key={value.id}
-                            roomLabel={`Kamar ${value.room?.roomNumber}`}
-                            floorLabel={`Lt. ${value.room?.floor}`}
-                            bookingIdLabel={value.id}
-                            startDateLabel={formatDate(value.startDate, {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                            })}
-                            endDateLabel={formatDate(value.endDate, {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                            })}
-                            durationLabel={`${value.duration}`}
-                            priceLabel={formatRupiah(value.pricePerUnit)}
-                            amountLabel={formatRupiah(value.totalPrice)}
-                            status={
-                                value.status === "completed"
-                                    ? "completed"
-                                    : value.status === "cancelled"
-                                      ? "cancelled"
-                                      : value.status === "confirmed"
-                                        ? "confirmed"
-                                        : "pending_payment"
-                            }
-                            actionLabel={
-                                value.status === "cancelled"
-                                    ? undefined
-                                    : value.status === "completed"
-                                      ? undefined
-                                      : value.status === "confirmed"
+                {booking && booking.length > 0 ? (
+                    booking.map((value) => {
+                        return (
+                            <BookingRow
+                                key={value.id}
+                                roomLabel={`Kamar ${value.room?.roomNumber}`}
+                                floorLabel={`Lt. ${value.room?.floor}`}
+                                bookingIdLabel={value.id}
+                                startDateLabel={formatDate(value.startDate, {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                })}
+                                endDateLabel={formatDate(value.endDate, {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                })}
+                                durationLabel={`${value.duration}`}
+                                priceLabel={formatRupiah(value.pricePerUnit)}
+                                amountLabel={formatRupiah(value.totalPrice)}
+                                status={
+                                    value.status === "completed"
+                                        ? "completed"
+                                        : value.status === "cancelled"
+                                          ? "cancelled"
+                                          : value.status === "confirmed"
+                                            ? "confirmed"
+                                            : "pending_payment"
+                                }
+                                actionLabel={
+                                    value.status === "cancelled"
                                         ? undefined
-                                        : "Bayar"
-                            }
-                            onAction={() => {
-                                router.push(
-                                    `/user/bookings/${value.id}/payment`,
-                                );
-                            }}
-                        />
-                    );
-                })}
+                                        : value.status === "completed"
+                                          ? undefined
+                                          : value.status === "confirmed"
+                                            ? undefined
+                                            : "Bayar"
+                                }
+                                onAction={() => {
+                                    router.push(
+                                        `/user/bookings/${value.id}/payment`,
+                                    );
+                                }}
+                            />
+                        );
+                    })
+                ) : (
+                    <EmptyState
+                        icon={CalendarIcon}
+                        title="Belum Ada Booking"
+                        description="Anda belum memiliki riwayat booking apa pun saat ini."
+                        className="p-4"
+                    />
+                )}
 
                 <Pagination className="mt-2">
                     <PaginationContent>

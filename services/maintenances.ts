@@ -8,9 +8,16 @@ import {
 import { ApiPaginatedResponse, ApiResponse } from "@/types/types";
 
 export async function fetchMaintenances(params?: GetMaintenancesParams, opts?: { token?: string }) {
+    const cleanParams: any = { ...params };
+    if (cleanParams.search === "") delete cleanParams.search;
+    if (cleanParams.status === "semua" || cleanParams.status === "") delete cleanParams.status;
+    if (cleanParams.category === "semua" || cleanParams.category === "") delete cleanParams.category;
+    if (cleanParams.startDate === "") delete cleanParams.startDate;
+    if (cleanParams.endDate === "") delete cleanParams.endDate;
+
     return http.get<ApiPaginatedResponse<Maintenance[]>>("/maintenances", {
         cache: "no-store",
-        query: params,
+        query: cleanParams,
         headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,
     });
 }

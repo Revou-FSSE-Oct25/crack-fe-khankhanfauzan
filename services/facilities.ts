@@ -1,10 +1,17 @@
 import { http } from "@/lib/http/client";
-import { CreateFacilityPayload, Facility, UpdateFacilityPayload } from "@/types/facilities";
+import { CreateFacilityPayload, Facility, GetFacilitiesParams, UpdateFacilityPayload } from "@/types/facilities";
 import { ApiPaginatedResponse, ApiResponse } from "@/types/types";
 
-export async function fetchFacilities(opts?: { token?: string }) {
+export async function fetchFacilities(params?: GetFacilitiesParams, opts?: { token?: string }) {
+    // Clean up params by removing empty search string or undefined values
+    const cleanParams: any = { ...params };
+    if (cleanParams.search === "") {
+        delete cleanParams.search;
+    }
+
     return http.get<ApiPaginatedResponse<Facility[]>>("/facilities", {
         cache: "no-store",
+        query: cleanParams,
         headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,
     });
 }
