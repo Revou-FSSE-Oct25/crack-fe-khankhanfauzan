@@ -21,7 +21,7 @@ import {
     ClockIcon,
     CheckCircleIcon,
     XCircleIcon,
-    InfoIcon
+    InfoIcon,
 } from "lucide-react";
 
 const badgeClassByStatus: Record<string, string> = {
@@ -70,7 +70,7 @@ const transactionStatusIcon = (status: string) => {
         default:
             return <InfoIcon className="w-4 h-4 text-gray-600" />;
     }
-}
+};
 
 export default function InvoiceDetailPage() {
     const params = useParams();
@@ -92,9 +92,7 @@ export default function InvoiceDetailPage() {
 
     if (loading) {
         return (
-            <div className="flex h-full w-full items-center justify-center min-h-[50vh]">
-                <Spinner />
-            </div>
+            <Spinner className="flex h-full mx-auto justify-center min-h-[50vh]" />
         );
     }
 
@@ -113,20 +111,27 @@ export default function InvoiceDetailPage() {
 
     const booking = invoice.booking;
     const room = booking?.room;
-    
+
     // Sort transactions by date descending so the latest is on top
     const transactions = [...(invoice.transactions || [])].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
     const latestTransaction = transactions.length > 0 ? transactions[0] : null;
 
-    const canPay = invoice.status === "unpaid" && (!latestTransaction || latestTransaction.status === "rejected");
+    const canPay =
+        invoice.status === "unpaid" &&
+        (!latestTransaction || latestTransaction.status === "rejected");
 
     return (
         <div className="p-4 mx-auto space-y-6">
             <div className="flex items-center gap-4">
                 <Link href="/user/transactions">
-                    <Button variant="ghost" size="icon" className="rounded-full">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full"
+                    >
                         <ArrowLeftIcon className="w-5 h-5" />
                     </Button>
                 </Link>
@@ -136,7 +141,10 @@ export default function InvoiceDetailPage() {
                     </h1>
                     <Badge
                         variant="secondary"
-                        className={badgeClassByStatus[invoice.status] || "bg-gray-50 border-gray-200 text-gray-900"}
+                        className={
+                            badgeClassByStatus[invoice.status] ||
+                            "bg-gray-50 border-gray-200 text-gray-900"
+                        }
                     >
                         {formatInvoiceStatusLabel(invoice.status)}
                     </Badge>
@@ -157,44 +165,86 @@ export default function InvoiceDetailPage() {
                             {transactions.length === 0 ? (
                                 <div className="text-center py-6 text-muted-foreground bg-gray-50 rounded-lg border border-dashed">
                                     <ReceiptIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                                    <p className="text-sm font-medium">Belum Ada Pembayaran</p>
-                                    <p className="text-xs">Silakan lakukan pembayaran untuk tagihan ini.</p>
+                                    <p className="text-sm font-medium">
+                                        Belum Ada Pembayaran
+                                    </p>
+                                    <p className="text-xs">
+                                        Silakan lakukan pembayaran untuk tagihan
+                                        ini.
+                                    </p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
                                     {transactions.map((trx, index) => (
-                                        <div key={trx.id} className={`p-4 rounded-lg border ${index === 0 ? 'border-primary/20 bg-primary/5' : 'border-gray-100 bg-gray-50'}`}>
+                                        <div
+                                            key={trx.id}
+                                            className={`p-4 rounded-lg border ${index === 0 ? "border-primary/20 bg-primary/5" : "border-gray-100 bg-gray-50"}`}
+                                        >
                                             <div className="flex justify-between items-start mb-3">
                                                 <div>
                                                     <p className="text-sm font-medium mb-1 flex items-center gap-2">
-                                                        {trx.paymentMethod || "Transfer Bank"}
-                                                        {index === 0 && <Badge variant="outline" className="text-[10px] h-5 px-1.5">Terbaru</Badge>}
+                                                        {trx.paymentMethod ||
+                                                            "Transfer Bank"}
+                                                        {index === 0 && (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="text-[10px] h-5 px-1.5"
+                                                            >
+                                                                Terbaru
+                                                            </Badge>
+                                                        )}
                                                     </p>
-                                                    <p className="text-xs text-muted-foreground">{formatDate(trx.createdAt)}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {formatDate(
+                                                            trx.createdAt,
+                                                        )}
+                                                    </p>
                                                 </div>
                                                 <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-md border text-xs font-medium">
-                                                    {transactionStatusIcon(trx.status)}
-                                                    <span className={
-                                                        trx.status === "verified" ? "text-green-700" :
-                                                        trx.status === "rejected" ? "text-red-700" :
-                                                        "text-amber-700"
-                                                    }>
-                                                        {formatTransactionStatusLabel(trx.status)}
+                                                    {transactionStatusIcon(
+                                                        trx.status,
+                                                    )}
+                                                    <span
+                                                        className={
+                                                            trx.status ===
+                                                            "verified"
+                                                                ? "text-green-700"
+                                                                : trx.status ===
+                                                                    "rejected"
+                                                                  ? "text-red-700"
+                                                                  : "text-amber-700"
+                                                        }
+                                                    >
+                                                        {formatTransactionStatusLabel(
+                                                            trx.status,
+                                                        )}
                                                     </span>
                                                 </div>
                                             </div>
-                                            
+
                                             <div className="flex justify-between items-center text-sm border-t border-gray-200/60 pt-3 mt-3">
-                                                <span className="text-muted-foreground">Nominal</span>
-                                                <span className="font-semibold">{formatRupiah(Number(trx.amount))}</span>
+                                                <span className="text-muted-foreground">
+                                                    Nominal
+                                                </span>
+                                                <span className="font-semibold">
+                                                    {formatRupiah(
+                                                        Number(trx.amount),
+                                                    )}
+                                                </span>
                                             </div>
 
-                                            {trx.rejectReason && trx.status === "rejected" && (
-                                                <div className="mt-3 p-3 bg-red-50 text-red-800 text-xs rounded border border-red-100 flex gap-2">
-                                                    <InfoIcon className="w-4 h-4 shrink-0" />
-                                                    <p><strong>Alasan Ditolak:</strong> {trx.rejectReason}</p>
-                                                </div>
-                                            )}
+                                            {trx.rejectReason &&
+                                                trx.status === "rejected" && (
+                                                    <div className="mt-3 p-3 bg-red-50 text-red-800 text-xs rounded border border-red-100 flex gap-2">
+                                                        <InfoIcon className="w-4 h-4 shrink-0" />
+                                                        <p>
+                                                            <strong>
+                                                                Alasan Ditolak:
+                                                            </strong>{" "}
+                                                            {trx.rejectReason}
+                                                        </p>
+                                                    </div>
+                                                )}
                                         </div>
                                     ))}
                                 </div>
@@ -259,7 +309,9 @@ export default function InvoiceDetailPage() {
                                 </p>
                                 <p className="font-medium">
                                     {booking?.duration}{" "}
-                                    {booking ? formatDurationUnit(booking.rentType) : "-"}
+                                    {booking
+                                        ? formatDurationUnit(booking.rentType)
+                                        : "-"}
                                 </p>
                             </div>
                             <div>
@@ -275,7 +327,9 @@ export default function InvoiceDetailPage() {
                                     Tanggal Masuk
                                 </p>
                                 <p className="font-medium">
-                                    {booking ? formatDate(booking.startDate) : "-"}
+                                    {booking
+                                        ? formatDate(booking.startDate)
+                                        : "-"}
                                 </p>
                             </div>
                             <div>
@@ -283,7 +337,9 @@ export default function InvoiceDetailPage() {
                                     Tanggal Keluar
                                 </p>
                                 <p className="font-medium">
-                                    {booking ? formatDate(booking.endDate) : "-"}
+                                    {booking
+                                        ? formatDate(booking.endDate)
+                                        : "-"}
                                 </p>
                             </div>
                         </CardContent>
@@ -313,7 +369,9 @@ export default function InvoiceDetailPage() {
                                         Denda Keterlambatan
                                     </p>
                                     <p className="font-medium text-red-600">
-                                        {formatRupiah(Number(invoice.penaltyAmount))}
+                                        {formatRupiah(
+                                            Number(invoice.penaltyAmount),
+                                        )}
                                     </p>
                                 </div>
                             )}
@@ -322,13 +380,20 @@ export default function InvoiceDetailPage() {
                                     Total Bayar
                                 </p>
                                 <p className="font-bold text-lg text-primary">
-                                    {formatRupiah(Number(invoice.totalAmount) + Number(invoice.penaltyAmount || 0))}
+                                    {formatRupiah(
+                                        Number(invoice.totalAmount) +
+                                            Number(invoice.penaltyAmount || 0),
+                                    )}
                                 </p>
                             </div>
 
                             <div className="bg-amber-50 p-3 rounded-lg border border-amber-100 mt-4">
-                                <p className="text-xs text-amber-800 font-medium mb-1">Batas Pembayaran:</p>
-                                <p className="text-sm font-semibold text-amber-900">{formatDate(invoice.dueDate)}</p>
+                                <p className="text-xs text-amber-800 font-medium mb-1">
+                                    Batas Pembayaran:
+                                </p>
+                                <p className="text-sm font-semibold text-amber-900">
+                                    {formatDate(invoice.dueDate)}
+                                </p>
                             </div>
 
                             {canPay && booking && (

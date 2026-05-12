@@ -28,6 +28,7 @@ import { fetchInvoices } from "@/services/transactions";
 import { getSession } from "@/actions/auth";
 import { formatDate, formatRupiah } from "@/utils/format";
 import { BookingStatus } from "@/mocks/booking_history";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function Page() {
     const [date, setDate] = React.useState<DateRange | undefined>({
@@ -247,97 +248,106 @@ function Page() {
                         }
                     />
                 ))} */}
-                {invoices?.map((invoice) => {
-                    const iconBg =
-                        invoice.booking.status === "confirmed"
-                            ? "bg-green-100"
-                            : invoice.booking.status === "pending_payment"
-                              ? "bg-amber-100"
-                              : invoice.booking.status === "cancelled"
-                                ? "bg-red-100"
-                                : "bg-gray-100";
+                {invoices && invoices.length > 0 ? (
+                    invoices.map((invoice) => {
+                        const iconBg =
+                            invoice.booking.status === "confirmed"
+                                ? "bg-green-100"
+                                : invoice.booking.status === "pending_payment"
+                                  ? "bg-amber-100"
+                                  : invoice.booking.status === "cancelled"
+                                    ? "bg-red-100"
+                                    : "bg-gray-100";
 
-                    const iconColor =
-                        invoice.booking.status === "confirmed"
-                            ? "oklch(72.3% 0.219 149.579)"
-                            : invoice.booking.status === "pending_payment"
-                              ? "orange"
-                              : invoice.booking.status === "cancelled"
-                                ? "red"
-                                : "gray";
+                        const iconColor =
+                            invoice.booking.status === "confirmed"
+                                ? "oklch(72.3% 0.219 149.579)"
+                                : invoice.booking.status === "pending_payment"
+                                  ? "orange"
+                                  : invoice.booking.status === "cancelled"
+                                    ? "red"
+                                    : "gray";
 
-                    const statusLabel =
-                        invoice.booking.status === "confirmed"
-                            ? "Dikonfirmasi"
-                            : invoice.booking.status === "pending_payment"
-                              ? "Pembayaran tertunda"
-                              : invoice.booking.status === "cancelled"
-                                ? "Dibatalkan"
-                                : "Selesai";
+                        const statusLabel =
+                            invoice.booking.status === "confirmed"
+                                ? "Dikonfirmasi"
+                                : invoice.booking.status === "pending_payment"
+                                  ? "Pembayaran tertunda"
+                                  : invoice.booking.status === "cancelled"
+                                    ? "Dibatalkan"
+                                    : "Selesai";
 
-                    /**
-                     * pending_payment
-                        confirmed
-                        cancelled
-                        completed
-                     * 
-                     */
+                        /**
+                         * pending_payment
+                            confirmed
+                            cancelled
+                            completed
+                         * 
+                         */
 
-                    const actionLabel =
-                        invoice.booking.status === "pending_payment"
-                            ? "Bayar"
-                            : undefined;
-                    return (
-                        <TransactionRow
-                            key={invoice.id}
-                            iconBgClass={iconBg}
-                            iconColor={iconColor}
-                            trxId={invoice.id}
-                            bookingId={invoice.bookingId}
-                            methodLabel={
-                                invoice.transactions &&
-                                invoice.transactions.length > 0
-                                    ? invoice.transactions[0].paymentMethod ||
-                                      "-"
-                                    : "-"
-                            }
-                            dueDateLabel={
-                                invoice.transactions &&
-                                invoice.transactions.length > 0
-                                    ? formatDate(invoice.dueDate, {
-                                          day: "numeric",
-                                          month: "long",
-                                          year: "numeric",
-                                      })
-                                    : "-"
-                            }
-                            paidDateLabel={
-                                invoice.transactions &&
-                                invoice.transactions.length > 0
-                                    ? formatDate(
-                                          invoice.transactions[0].paidAt,
-                                          {
+                        const actionLabel =
+                            invoice.booking.status === "pending_payment"
+                                ? "Bayar"
+                                : undefined;
+                        return (
+                            <TransactionRow
+                                key={invoice.id}
+                                iconBgClass={iconBg}
+                                iconColor={iconColor}
+                                trxId={invoice.id}
+                                bookingId={invoice.bookingId}
+                                methodLabel={
+                                    invoice.transactions &&
+                                    invoice.transactions.length > 0
+                                        ? invoice.transactions[0]
+                                              .paymentMethod || "-"
+                                        : "-"
+                                }
+                                dueDateLabel={
+                                    invoice.transactions &&
+                                    invoice.transactions.length > 0
+                                        ? formatDate(invoice.dueDate, {
                                               day: "numeric",
                                               month: "long",
                                               year: "numeric",
-                                          },
-                                      )
-                                    : "-"
-                            }
-                            amountLabel={
-                                invoice.transactions &&
-                                invoice.transactions.length > 0
-                                    ? formatRupiah(
-                                          invoice.transactions[0].amount,
-                                      )
-                                    : "-"
-                            }
-                            status={invoice.booking.status as BookingStatus}
-                            statusLabel={statusLabel}
-                            actionLabel={actionLabel}
-                        />
-                    );
-                })}
+                                          })
+                                        : "-"
+                                }
+                                paidDateLabel={
+                                    invoice.transactions &&
+                                    invoice.transactions.length > 0
+                                        ? formatDate(
+                                              invoice.transactions[0].paidAt,
+                                              {
+                                                  day: "numeric",
+                                                  month: "long",
+                                                  year: "numeric",
+                                              },
+                                          )
+                                        : "-"
+                                }
+                                amountLabel={
+                                    invoice.transactions &&
+                                    invoice.transactions.length > 0
+                                        ? formatRupiah(
+                                              invoice.transactions[0].amount,
+                                          )
+                                        : "-"
+                                }
+                                status={invoice.booking.status as BookingStatus}
+                                statusLabel={statusLabel}
+                                actionLabel={actionLabel}
+                            />
+                        );
+                    })
+                ) : (
+                    <EmptyState
+                        icon={ReceiptIcon}
+                        title="Belum Ada Transaksi"
+                        description="Anda belum memiliki riwayat transaksi pembayaran apa pun saat ini."
+                        className="p-4"
+                    />
+                )}
                 <Pagination className="mt-2">
                     <PaginationContent>
                         <PaginationItem>

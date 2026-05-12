@@ -75,9 +75,7 @@ function Page() {
 
     if (loading) {
         return (
-            <div className="flex h-full w-full items-center justify-center min-h-[50vh]">
-                <Spinner />
-            </div>
+            <Spinner className="flex h-full mx-auto justify-center min-h-[50vh]" />
         );
     }
 

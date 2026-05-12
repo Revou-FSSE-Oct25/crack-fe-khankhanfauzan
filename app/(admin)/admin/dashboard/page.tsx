@@ -44,6 +44,7 @@ import { getSession } from "@/actions/auth";
 import { AdminDashboardData } from "@/types/admin-dashboard";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/ui/spinner";
 
 function Page() {
     const router = useRouter();
@@ -118,7 +119,9 @@ function Page() {
         }).format(n);
 
     if (loading && !data) {
-        return <div className="p-6">Loading...</div>;
+        return (
+            <Spinner className="flex h-full mx-auto justify-center min-h-[50vh]" />
+        );
     }
 
     if (!data) {

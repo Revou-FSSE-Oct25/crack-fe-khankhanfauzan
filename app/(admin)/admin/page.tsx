@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { getSession } from "@/actions/auth";
 import { useEffect, useState } from "react";
 import { AdminDashboardData } from "@/types/admin-dashboard";
+import { Spinner } from "@/components/ui/spinner";
 
 function Page() {
     const router = useRouter();
@@ -60,7 +61,9 @@ function Page() {
         }).format(n);
 
     if (loading) {
-        return <div className="p-4">Loading dashboard data...</div>;
+        return (
+            <Spinner className="flex h-full mx-auto justify-center min-h-[50vh]" />
+        );
     }
 
     if (errorMsg) {
