@@ -11,6 +11,7 @@ import { useState } from "react";
 import { createFacility } from "@/services/facilities";
 import { useRouter } from "next/navigation";
 import { getSession } from "@/actions/auth";
+import { Spinner } from "@/components/ui/spinner";
 
 type FormValues = {
     name: string;
@@ -44,9 +45,8 @@ export default function Page() {
             await createFacility(payload, { token });
             reset();
             router.push("/admin/facilities");
-        } catch (e) {
-            const msg =
-                e instanceof Error ? e.message : "Gagal membuat fasilitas";
+        } catch (e: any) {
+            const msg = e?.message || "Gagal membuat fasilitas";
             setErrorMsg(msg);
         } finally {
             setIsSubmitting(false);
@@ -60,9 +60,15 @@ export default function Page() {
                     <h1 className="text-xl font-semibold">Buat Fasilitas</h1>
                     <div className="flex gap-2">
                         <Link href="/admin/facilities">
-                            <Button variant="outline">Kembali</Button>
+                            <Button variant="outline" disabled={isSubmitting}>
+                                Kembali
+                            </Button>
                         </Link>
-                        <Button variant="outline" onClick={() => reset()}>
+                        <Button
+                            variant="outline"
+                            onClick={() => reset()}
+                            disabled={isSubmitting}
+                        >
                             Reset
                         </Button>
                     </div>
@@ -111,6 +117,9 @@ export default function Page() {
                             </div>
                             <div className="flex justify-end">
                                 <Button type="submit" disabled={isSubmitting}>
+                                    {isSubmitting && (
+                                        <Spinner className="w-4 h-4 mr-2" />
+                                    )}
                                     {isSubmitting
                                         ? "Menyimpan..."
                                         : "Simpan Fasilitas"}

@@ -23,6 +23,7 @@ import { Facility } from "@/types/facilities";
 import { getSession } from "@/actions/auth";
 import { CheckCircle2, UploadCloudIcon, XIcon } from "lucide-react";
 import Image from "next/image";
+import { Spinner } from "@/components/ui/spinner";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -51,6 +52,7 @@ export default function Page() {
     const [facilities, setFacilities] = useState<Facility[]>([]);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     const [newFiles, setNewFiles] = useState<File[]>([]);
     const [newPreviews, setNewPreviews] = useState<string[]>([]);
@@ -103,6 +105,7 @@ export default function Page() {
     const facilitiesWatch = watch("facilities");
 
     async function onSubmit(values: FormValues) {
+        setIsSaving(true);
         try {
             const session = getSession();
             const token = session?.accessToken;
@@ -147,6 +150,8 @@ export default function Page() {
         } catch (e: any) {
             const msg = e?.message || "Gagal membuat kamar";
             setErrorMsg(msg);
+        } finally {
+            setIsSaving(false);
         }
     }
 
@@ -176,10 +181,13 @@ export default function Page() {
                     <h1 className="text-xl font-semibold">Buat Kamar</h1>
                     <div className="flex gap-2">
                         <Link href="/admin/rooms">
-                            <Button variant="outline">Kembali</Button>
+                            <Button variant="outline" disabled={isSaving}>
+                                Kembali
+                            </Button>
                         </Link>
                         <Button
                             variant="outline"
+                            disabled={isSaving}
                             onClick={() => {
                                 reset({
                                     roomNumber: "",
@@ -199,7 +207,13 @@ export default function Page() {
                         >
                             Reset
                         </Button>
-                        <Button onClick={handleSubmit(onSubmit)}>Simpan</Button>
+                        <Button
+                            onClick={handleSubmit(onSubmit)}
+                            disabled={isSaving}
+                        >
+                            {isSaving && <Spinner className="w-4 h-4 mr-2" />}
+                            Simpan
+                        </Button>
                     </div>
                 </div>
 

@@ -23,6 +23,7 @@ import type { Room } from "@/types/rooms";
 import { getSession } from "@/actions/auth";
 import { XIcon, UploadCloudIcon } from "lucide-react";
 import Image from "next/image";
+import { Spinner } from "@/components/ui/spinner";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -126,9 +127,11 @@ function RoomDetailsForm({ room }: RoomDetailsFormProps) {
     }, []);
 
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     async function onSubmit(values: FormValues) {
         if (!room?.id) return;
+        setIsSaving(true);
         try {
             const session = getSession();
             const token = session?.accessToken;
@@ -141,7 +144,6 @@ function RoomDetailsForm({ room }: RoomDetailsFormProps) {
                     description: f.description ?? null,
                 }));
             const payload = {
-                roomNumber: values.roomNumber,
                 floor: values.floor ?? 0,
                 roomType: values.roomType || "standard",
                 price: values.price ?? 0,
@@ -170,6 +172,8 @@ function RoomDetailsForm({ room }: RoomDetailsFormProps) {
         } catch (e: any) {
             const msg = e?.message || "Gagal menyimpan perubahan";
             setErrorMsg(msg);
+        } finally {
+            setIsSaving(false);
         }
     }
 
@@ -195,12 +199,24 @@ function RoomDetailsForm({ room }: RoomDetailsFormProps) {
                     <h1 className="text-xl font-semibold">Detail Kamar</h1>
                     <div className="flex gap-2">
                         <Link href="/admin/rooms">
-                            <Button variant="outline">Kembali</Button>
+                            <Button variant="outline" disabled={isSaving}>
+                                Kembali
+                            </Button>
                         </Link>
-                        <Button variant="destructive" onClick={onDelete}>
+                        <Button
+                            variant="destructive"
+                            onClick={onDelete}
+                            disabled={isSaving}
+                        >
                             Hapus
                         </Button>
-                        <Button onClick={handleSubmit(onSubmit)}>Simpan</Button>
+                        <Button
+                            onClick={handleSubmit(onSubmit)}
+                            disabled={isSaving}
+                        >
+                            {isSaving && <Spinner className="w-4 h-4 mr-2" />}
+                            Simpan
+                        </Button>
                     </div>
                 </div>
 
@@ -249,11 +265,8 @@ function RoomDetailsForm({ room }: RoomDetailsFormProps) {
                                                 <SelectItem value="standard">
                                                     Standard
                                                 </SelectItem>
-                                                <SelectItem value="deluxe">
-                                                    Deluxe
-                                                </SelectItem>
-                                                <SelectItem value="superior">
-                                                    Superior
+                                                <SelectItem value="studio">
+                                                    Studio
                                                 </SelectItem>
                                             </SelectContent>
                                         </Select>

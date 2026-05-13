@@ -12,6 +12,17 @@ import Link from "next/link";
 import { updateFacility, deleteFacility } from "@/services/facilities";
 import type { Facility } from "@/types/facilities";
 import { getSession } from "@/actions/auth";
+import { Spinner } from "@/components/ui/spinner";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type FormValues = {
     name: string;
@@ -29,6 +40,7 @@ export default function FacilityDetailsForm({
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const { register, handleSubmit } = useForm<FormValues>({
         defaultValues: {
@@ -53,9 +65,8 @@ export default function FacilityDetailsForm({
             await updateFacility(facility.id, payload, { token });
             router.push("/admin/facilities");
             router.refresh();
-        } catch (e) {
-            const msg =
-                e instanceof Error ? e.message : "Gagal memperbarui fasilitas";
+        } catch (e: any) {
+            const msg = e?.message || "Gagal memperbarui fasilitas";
             setErrorMsg(msg);
         } finally {
             setIsSubmitting(false);
@@ -64,13 +75,7 @@ export default function FacilityDetailsForm({
 
     async function onDelete() {
         if (!facility?.id) return;
-
-        if (
-            !window.confirm("Apakah Anda yakin ingin menghapus fasilitas ini?")
-        ) {
-            return;
-        }
-
+        setIsDeleteDialogOpen(false);
         setIsDeleting(true);
         setErrorMsg(null);
 
@@ -81,9 +86,8 @@ export default function FacilityDetailsForm({
             await deleteFacility(facility.id, { token });
             router.push("/admin/facilities");
             router.refresh();
-        } catch (e) {
-            const msg =
-                e instanceof Error ? e.message : "Gagal menghapus fasilitas";
+        } catch (e: any) {
+            const msg = e?.message || "Gagal menghapus fasilitas";
             setErrorMsg(msg);
             setIsDeleting(false);
         }
@@ -106,13 +110,19 @@ export default function FacilityDetailsForm({
                     <h1 className="text-xl font-semibold">Detail Fasilitas</h1>
                     <div className="flex gap-2">
                         <Link href="/admin/facilities">
-                            <Button variant="outline">Kembali</Button>
+                            <Button
+                                variant="outline"
+                                disabled={isDeleting || isSubmitting}
+                            >
+                                Kembali
+                            </Button>
                         </Link>
                         <Button
                             variant="destructive"
-                            onClick={onDelete}
+                            onClick={() => setIsDeleteDialogOpen(true)}
                             disabled={isDeleting || isSubmitting}
                         >
+                            {isDeleting && <Spinner className="w-4 h-4 mr-2" />}
                             {isDeleting ? "Menghapus..." : "Hapus"}
                         </Button>
                     </div>
@@ -164,6 +174,9 @@ export default function FacilityDetailsForm({
                                     type="submit"
                                     disabled={isSubmitting || isDeleting}
                                 >
+                                    {isSubmitting && (
+                                        <Spinner className="w-4 h-4 mr-2" />
+                                    )}
                                     {isSubmitting
                                         ? "Menyimpan..."
                                         : "Simpan Perubahan"}
@@ -173,6 +186,30 @@ export default function FacilityDetailsForm({
                     </CardContent>
                 </Card>
             </div>
+
+            <AlertDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Konfirmasi Hapus</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Apakah Anda yakin ingin menghapus fasilitas ini?
+                            Tindakan ini tidak dapat dibatalkan.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={onDelete}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Hapus
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
