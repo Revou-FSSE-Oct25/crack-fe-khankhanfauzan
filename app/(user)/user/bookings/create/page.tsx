@@ -183,7 +183,7 @@ function BookingForm() {
                         ? "Perpanjangan berhasil dibuat"
                         : "Booking berhasil dibuat",
                 );
-                router.push(`/user/bookings/${response.data.id}/payment`);
+                router.push(`/user/bookings/${response.data.id}`);
             }
         } catch (error: any) {
             console.error("Booking error:", error);
@@ -204,7 +204,10 @@ function BookingForm() {
         }
     };
 
-    if (loading) return <Spinner className="items-center" />;
+    if (loading)
+        return (
+            <Spinner className="justify-center items-center mx-auto h-full" />
+        );
 
     return (
         <div className="p-4 max-w-7xl mx-auto space-y-4">

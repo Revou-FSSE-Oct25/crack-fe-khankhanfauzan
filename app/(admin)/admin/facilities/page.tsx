@@ -80,7 +80,6 @@ export default function Page() {
 
                 <Card className="shadow-none flex-1 flex flex-col">
                     <CardHeader className="flex-row items-center justify-between">
-                        <CardTitle>Daftar Fasilitas</CardTitle>
                         <FilterBar
                             search={{
                                 value: query,

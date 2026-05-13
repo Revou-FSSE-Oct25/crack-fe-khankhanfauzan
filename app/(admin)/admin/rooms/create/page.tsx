@@ -265,11 +265,8 @@ export default function Page() {
                                                 <SelectItem value="standard">
                                                     Standard
                                                 </SelectItem>
-                                                <SelectItem value="deluxe">
-                                                    Deluxe
-                                                </SelectItem>
-                                                <SelectItem value="superior">
-                                                    Superior
+                                                <SelectItem value="studio">
+                                                    Studio
                                                 </SelectItem>
                                             </SelectContent>
                                         </Select>
