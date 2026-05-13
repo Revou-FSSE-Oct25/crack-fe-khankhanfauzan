@@ -12,7 +12,9 @@ import {
     type LucideIcon,
     FileTextIcon,
     CheckCircleIcon,
-    AlertCircleIcon,
+    CreditCardIcon,
+    HourglassIcon,
+    HistoryIcon,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -21,7 +23,8 @@ export type Status =
     | "cancelled"
     | "expired"
     | "confirmed"
-    | "pending_payment";
+    | "pending_payment"
+    | "pending_approval";
 
 const badgeClassByStatus: Record<Status, string> = {
     completed: "bg-blue-50 border-blue-200 text-blue-900",
@@ -29,14 +32,16 @@ const badgeClassByStatus: Record<Status, string> = {
     expired: "bg-gray-50 border-gray-200 text-gray-900",
     confirmed: "bg-green-50 border-green-200 text-green-900",
     pending_payment: "bg-amber-50 border-amber-200 text-amber-900",
+    pending_approval: "bg-purple-50 border-purple-200 text-purple-900",
 };
 
 const badgeIconByStatus: Record<Status, LucideIcon> = {
     completed: CircleCheckBigIcon,
     cancelled: XCircleIcon,
-    expired: ClockIcon,
+    expired: HistoryIcon,
     confirmed: CheckCircleIcon,
-    pending_payment: AlertCircleIcon,
+    pending_payment: CreditCardIcon,
+    pending_approval: HourglassIcon,
 };
 
 const badgeIconColorByStatus: Record<Status, string> = {
@@ -45,10 +50,13 @@ const badgeIconColorByStatus: Record<Status, string> = {
     expired: "gray",
     confirmed: "green",
     pending_payment: "orange",
+    pending_approval: "purple",
 };
 
 const formatStatusLabel = (status: Status) => {
     switch (status) {
+        case "pending_approval":
+            return "Menunggu Persetujuan";
         case "pending_payment":
             return "Menunggu Pembayaran";
         case "completed":
@@ -167,7 +175,7 @@ function BookingRow({
                 <div className="flex gap-4 items-center">
                     <div className="flex flex-col items-end">
                         <p className="text-muted-foreground text-sm">
-                            Total Dibayar
+                            Total Tagihan
                         </p>
                         <p className="font-bold text-lg">{amountLabel}</p>
                         <Badge variant="secondary" className={badgeClass}>

@@ -1,4 +1,4 @@
-export type BookingStatus = "completed" | "cancelled" | "confirmed" | "pending_payment";
+export type BookingStatus = "completed" | "cancelled" | "confirmed" | "pending_payment" | "pending_approval";
 
 export type BookingRoom = {
     room_id: string;

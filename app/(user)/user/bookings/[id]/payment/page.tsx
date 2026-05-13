@@ -68,7 +68,7 @@ function BookingPaymentPage() {
     const params = useParams();
     const router = useRouter();
 
-    const bookingId = String(params?.bookingId ?? "");
+    const bookingId = String(params?.id ?? "");
 
     const [booking, setBooking] = useState<ApiResponse<Booking>["data"] | null>(
         null,

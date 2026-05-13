@@ -201,16 +201,15 @@ function Page() {
                                           ? "cancelled"
                                           : value.status === "confirmed"
                                             ? "confirmed"
-                                            : "pending_payment"
+                                            : value.status ===
+                                                "pending_approval"
+                                              ? "pending_approval"
+                                              : "pending_payment"
                                 }
                                 actionLabel={
-                                    value.status === "cancelled"
-                                        ? undefined
-                                        : value.status === "completed"
-                                          ? undefined
-                                          : value.status === "confirmed"
-                                            ? undefined
-                                            : "Bayar"
+                                    value.status === "pending_payment"
+                                        ? "Bayar"
+                                        : undefined
                                 }
                                 onAction={() => {
                                     router.push(

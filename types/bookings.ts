@@ -51,8 +51,17 @@ export interface Booking {
     invoices?: {
         id: string
         totalAmount: number
+        penaltyAmount?: number
         dueDate: string
         status: string
+        transactions?: {
+            id: string
+            amount: string
+            status: string
+            paymentMethod?: string
+            paidAt?: string
+            createdAt: string
+        }[]
     }[]
     tenant?: {
         id: string

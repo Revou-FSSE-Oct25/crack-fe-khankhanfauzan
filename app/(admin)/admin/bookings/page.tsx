@@ -87,6 +87,15 @@ export default function Page() {
                         Menunggu Pembayaran
                     </Badge>
                 );
+            case "pending_approval":
+                return (
+                    <Badge
+                        variant="secondary"
+                        className="bg-purple-100 text-purple-700 hover:bg-purple-100"
+                    >
+                        Menunggu Persetujuan
+                    </Badge>
+                );
             case "cancelled":
                 return (
                     <Badge
