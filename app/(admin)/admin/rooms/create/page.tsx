@@ -18,10 +18,20 @@ import { Field, FieldGroup } from "@/components/ui/field";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchFacilities } from "@/services/facilities";
-import { createRoom } from "@/services/rooms";
+import { createRoom, uploadRoomImages } from "@/services/rooms";
 import { Facility } from "@/types/facilities";
 import { getSession } from "@/actions/auth";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, UploadCloudIcon, XIcon } from "lucide-react";
+import Image from "next/image";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type FormValues = {
     roomNumber: string;
@@ -41,6 +51,38 @@ export default function Page() {
     const [facilities, setFacilities] = useState<Facility[]>([]);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+
+    const [newFiles, setNewFiles] = useState<File[]>([]);
+    const [newPreviews, setNewPreviews] = useState<string[]>([]);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const filesArray = Array.from(e.target.files);
+            if (newFiles.length + filesArray.length > 5) {
+                setAlertMessage(
+                    "Maksimal hanya 5 foto kamar yang diperbolehkan.",
+                );
+                return;
+            }
+            setNewFiles((prev) => [...prev, ...filesArray]);
+            setNewPreviews((prev) => [
+                ...prev,
+                ...filesArray.map((f) => URL.createObjectURL(f)),
+            ]);
+        }
+        e.target.value = "";
+    };
+
+    const handleRemoveNew = (index: number) => {
+        setNewFiles((prev) => prev.filter((_, i) => i !== index));
+        setNewPreviews((prev) => {
+            const copy = [...prev];
+            URL.revokeObjectURL(copy[index]);
+            copy.splice(index, 1);
+            return copy;
+        });
+    };
 
     const { register, handleSubmit, control, reset, setValue, watch } =
         useForm<FormValues>({
@@ -87,8 +129,19 @@ export default function Page() {
                     unit: values.unit ?? "m",
                 },
             };
-            await createRoom(payload, { token });
+            const createdRes = await createRoom(payload, { token });
+
+            if (newFiles.length > 0 && createdRes?.data?.id) {
+                const formData = new FormData();
+                newFiles.forEach((file) => formData.append("images", file));
+                await uploadRoomImages(String(createdRes.data.id), formData, {
+                    token,
+                });
+            }
+
             reset();
+            setNewFiles([]);
+            setNewPreviews([]);
             setErrorMsg(null);
             setIsSuccessModalOpen(true);
         } catch (e) {
@@ -108,7 +161,7 @@ export default function Page() {
         const session = getSession();
         const token = session?.accessToken;
 
-        fetchFacilities({ token })
+        fetchFacilities({ page: 1, perPage: 100 }, { token })
             .then((value) => setFacilities(value.data))
             .catch((e) =>
                 setErrorMsg(e instanceof Error ? e.message : String(e)),
@@ -127,7 +180,7 @@ export default function Page() {
                         </Link>
                         <Button
                             variant="outline"
-                            onClick={() =>
+                            onClick={() => {
                                 reset({
                                     roomNumber: "",
                                     roomType: "standard",
@@ -139,8 +192,10 @@ export default function Page() {
                                     width: undefined,
                                     area: undefined,
                                     unit: "m",
-                                })
-                            }
+                                });
+                                setNewFiles([]);
+                                setNewPreviews([]);
+                            }}
                         >
                             Reset
                         </Button>
@@ -325,10 +380,75 @@ export default function Page() {
                                     ))}
                                 </FieldGroup>
                             </div>
+
+                            <div className="flex flex-col gap-2 mt-4">
+                                <Label>Foto Kamar (Maksimal 5)</Label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                    {newPreviews.map((url, idx) => (
+                                        <div
+                                            key={`new-${idx}`}
+                                            className="relative aspect-square rounded-md overflow-hidden border bg-muted"
+                                        >
+                                            <Image
+                                                src={url}
+                                                alt={`New photo ${idx + 1}`}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    handleRemoveNew(idx)
+                                                }
+                                                className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors"
+                                            >
+                                                <XIcon className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    {newFiles.length < 5 && (
+                                        <label className="relative aspect-square rounded-md border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground">
+                                            <UploadCloudIcon className="w-8 h-8" />
+                                            <span className="text-xs font-medium">
+                                                Upload Foto
+                                            </span>
+                                            <input
+                                                type="file"
+                                                accept="image/png, image/jpeg, image/jpg"
+                                                multiple
+                                                className="hidden"
+                                                onChange={handleFileChange}
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
+
+            <AlertDialog
+                open={!!alertMessage}
+                onOpenChange={() => setAlertMessage(null)}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Informasi</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {alertMessage}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction
+                            onClick={() => setAlertMessage(null)}
+                        >
+                            Mengerti
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* Success Modal */}
             {isSuccessModalOpen && (
