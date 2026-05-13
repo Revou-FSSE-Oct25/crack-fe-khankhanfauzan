@@ -17,25 +17,26 @@ import { formatDate, formatRupiah, formatDurationUnit } from "@/utils/format";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+
 import {
     CalendarIcon,
-    CreditCardIcon,
     FileTextIcon,
     HomeIcon,
-    MapPinIcon,
     ArrowLeftIcon,
     UserIcon,
     CheckIcon,
     XIcon,
 } from "lucide-react";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Status } from "@/components/bookings/BookingRow";
 
 const badgeClassByStatus: Record<Status, string> = {
@@ -44,10 +45,13 @@ const badgeClassByStatus: Record<Status, string> = {
     expired: "bg-gray-50 border-gray-200 text-gray-900",
     confirmed: "bg-green-50 border-green-200 text-green-900",
     pending_payment: "bg-amber-50 border-amber-200 text-amber-900",
+    pending_approval: "bg-purple-50 border-purple-200 text-purple-900",
 };
 
 const formatStatusLabel = (status: Status) => {
     switch (status) {
+        case "pending_approval":
+            return "Menunggu Persetujuan";
         case "pending_payment":
             return "Menunggu Pembayaran";
         case "completed":
@@ -74,6 +78,16 @@ function page() {
     const [loading, setLoading] = useState<boolean>(true);
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
+    // Alert dialog state
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [alertConfig, setAlertConfig] = useState<{
+        title: string;
+        description: string;
+        actionText: string;
+        actionVariant: "default" | "destructive";
+        onConfirm: () => void;
+    } | null>(null);
+
     const fetchBooking = () => {
         const session = getSession();
         const token = session?.accessToken;
@@ -88,46 +102,56 @@ function page() {
         fetchBooking();
     }, [bookingId]);
 
-    const handleApprove = async () => {
-        if (
-            !confirm(
+    const handleApprove = () => {
+        setAlertConfig({
+            title: "Setujui Booking",
+            description:
                 "Apakah Anda yakin ingin menyetujui booking ini? Tenant akan dapat melanjutkan ke proses pembayaran.",
-            )
-        )
-            return;
-
-        setIsUpdating(true);
-        try {
-            const session = getSession();
-            await approveBooking(bookingId, { token: session?.accessToken });
-            toast.success("Booking berhasil disetujui!");
-            fetchBooking();
-        } catch (error: any) {
-            toast.error(error.message || "Gagal menyetujui booking");
-        } finally {
-            setIsUpdating(false);
-        }
+            actionText: "Setujui",
+            actionVariant: "default",
+            onConfirm: async () => {
+                setIsUpdating(true);
+                try {
+                    const session = getSession();
+                    await approveBooking(bookingId, {
+                        token: session?.accessToken,
+                    });
+                    toast.success("Booking berhasil disetujui!");
+                    fetchBooking();
+                } catch (error: any) {
+                    toast.error(error.message || "Gagal menyetujui booking");
+                } finally {
+                    setIsUpdating(false);
+                }
+            },
+        });
+        setAlertOpen(true);
     };
 
-    const handleReject = async () => {
-        if (
-            !confirm(
+    const handleReject = () => {
+        setAlertConfig({
+            title: "Tolak Booking",
+            description:
                 "Apakah Anda yakin ingin menolak booking ini? Tindakan ini tidak dapat dibatalkan.",
-            )
-        )
-            return;
-
-        setIsUpdating(true);
-        try {
-            const session = getSession();
-            await rejectBooking(bookingId, { token: session?.accessToken });
-            toast.success("Booking berhasil ditolak.");
-            fetchBooking();
-        } catch (error: any) {
-            toast.error(error.message || "Gagal menolak booking");
-        } finally {
-            setIsUpdating(false);
-        }
+            actionText: "Tolak",
+            actionVariant: "destructive",
+            onConfirm: async () => {
+                setIsUpdating(true);
+                try {
+                    const session = getSession();
+                    await rejectBooking(bookingId, {
+                        token: session?.accessToken,
+                    });
+                    toast.success("Booking berhasil ditolak.");
+                    fetchBooking();
+                } catch (error: any) {
+                    toast.error(error.message || "Gagal menolak booking");
+                } finally {
+                    setIsUpdating(false);
+                }
+            },
+        });
+        setAlertOpen(true);
     };
 
     if (loading) {
@@ -157,12 +181,44 @@ function page() {
               ? "cancelled"
               : booking.status === "confirmed"
                 ? "confirmed"
-                : "pending_payment";
+                : booking.status === "pending_approval"
+                  ? "pending_approval"
+                  : "pending_payment";
 
     const tenant = booking.tenant;
 
     return (
         <div className="p-4 mx-auto space-y-4">
+            <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            {alertConfig?.title}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {alertConfig?.description}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                if (alertConfig?.onConfirm) {
+                                    alertConfig.onConfirm();
+                                }
+                            }}
+                            className={
+                                alertConfig?.actionVariant === "destructive"
+                                    ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    : ""
+                            }
+                        >
+                            {alertConfig?.actionText}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             <div className="flex items-center gap-4 mb-6">
                 <Link href="/admin/bookings">
                     <Button
@@ -425,7 +481,7 @@ function page() {
                     </Card>
 
                     {/* Aksi Booking */}
-                    {status === "pending_payment" && (
+                    {status === "pending_approval" && (
                         <Card className="shadow-none border-amber-200 bg-amber-50/50">
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-base flex items-center gap-2 text-amber-900">
