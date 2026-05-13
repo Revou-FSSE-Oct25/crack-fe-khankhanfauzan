@@ -3,7 +3,7 @@ import { PaginationParams } from './common';
 // ==========================================
 // STATUS ENUMS (Sinkron dengan Prisma)
 // ==========================================
-export type InvoiceStatus = 'unpaid' | 'partially_paid' | 'paid' | 'expired';
+export type InvoiceStatus = 'unpaid' | 'partially_paid' | 'paid' | 'expired' | 'cancelled';
 
 export type TransactionStatus = 'pending' | 'verified' | 'rejected';
 

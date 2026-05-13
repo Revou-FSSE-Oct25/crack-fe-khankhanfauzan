@@ -94,6 +94,33 @@ export default function Page() {
                         Belum Lunas
                     </Badge>
                 );
+            case "partially_paid":
+                return (
+                    <Badge
+                        variant="secondary"
+                        className="bg-blue-100 text-blue-700 hover:bg-blue-100"
+                    >
+                        Dibayar Sebagian
+                    </Badge>
+                );
+            case "expired":
+                return (
+                    <Badge
+                        variant="secondary"
+                        className="bg-gray-100 text-gray-700 hover:bg-gray-100"
+                    >
+                        Kedaluwarsa
+                    </Badge>
+                );
+            case "cancelled":
+                return (
+                    <Badge
+                        variant="secondary"
+                        className="bg-red-100 text-red-700 hover:bg-red-100"
+                    >
+                        Dibatalkan
+                    </Badge>
+                );
             default:
                 return <Badge variant="secondary">{status}</Badge>;
         }

@@ -35,10 +35,13 @@ const badgeClassByStatus: Record<Status, string> = {
     expired: "bg-gray-50 border-gray-200 text-gray-900",
     confirmed: "bg-green-50 border-green-200 text-green-900",
     pending_payment: "bg-amber-50 border-amber-200 text-amber-900",
+    pending_approval: "bg-purple-50 border-purple-200 text-purple-900",
 };
 
 const formatStatusLabel = (status: Status) => {
     switch (status) {
+        case "pending_approval":
+            return "Menunggu Persetujuan";
         case "pending_payment":
             return "Menunggu Pembayaran";
         case "completed":
@@ -100,10 +103,22 @@ function Page() {
               ? "cancelled"
               : booking.status === "confirmed"
                 ? "confirmed"
-                : "pending_payment";
+                : booking.status === "pending_approval"
+                  ? "pending_approval"
+                  : "pending_payment";
 
     const canPay = status === "pending_payment";
     const tenant = booking.tenant;
+
+    const invoice = booking.invoices?.[0];
+    const totalPaid = (invoice?.transactions || [])
+        .filter((t: any) => t.status === "verified")
+        .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+
+    const remainingAmount =
+        Number(booking.totalPrice) +
+        Number(invoice?.penaltyAmount || 0) -
+        totalPaid;
 
     return (
         <div className="p-4 mx-auto space-y-4">
@@ -263,14 +278,53 @@ function Page() {
                                     {formatRupiah(Number(booking.pricePerUnit))}
                                 </p>
                             </div>
+                            {Number(invoice?.penaltyAmount) > 0 && (
+                                <div className="flex justify-between items-center border-b pb-2">
+                                    <p className="text-sm text-red-500">
+                                        Denda Keterlambatan
+                                    </p>
+                                    <p className="font-medium text-red-600">
+                                        {formatRupiah(
+                                            Number(invoice?.penaltyAmount),
+                                        )}
+                                    </p>
+                                </div>
+                            )}
                             <div className="flex justify-between items-center pt-2">
                                 <p className="text-sm font-semibold">
-                                    Total Harga
+                                    Total Tagihan
                                 </p>
-                                <p className="font-bold text-lg text-primary">
-                                    {formatRupiah(Number(booking.totalPrice))}
+                                <p className="font-bold text-lg">
+                                    {formatRupiah(
+                                        Number(booking.totalPrice) +
+                                            Number(invoice?.penaltyAmount || 0),
+                                    )}
                                 </p>
                             </div>
+
+                            {totalPaid > 0 && (
+                                <div className="flex justify-between items-center border-b border-dashed pb-3 pt-2">
+                                    <p className="text-sm text-emerald-600">
+                                        Sudah Dibayar
+                                    </p>
+                                    <p className="font-medium text-emerald-700">
+                                        - {formatRupiah(totalPaid)}
+                                    </p>
+                                </div>
+                            )}
+
+                            {canPay && (
+                                <div className="flex justify-between items-center pt-1 pb-2">
+                                    <p className="text-sm font-semibold">
+                                        Sisa Bayar
+                                    </p>
+                                    <p className="font-bold text-lg text-primary">
+                                        {formatRupiah(
+                                            Math.max(0, remainingAmount),
+                                        )}
+                                    </p>
+                                </div>
+                            )}
 
                             {canPay && (
                                 <Link

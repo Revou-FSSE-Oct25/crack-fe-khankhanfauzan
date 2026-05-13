@@ -195,59 +195,14 @@ function Page() {
                     placeholder: "Pilih Status",
                     options: [
                         { value: "semua", label: "Semua" },
-                        { value: "dibayar", label: "Dibayar" },
-                        { value: "pending", label: "Pending" },
-                        { value: "terlambat", label: "Terlambat" },
-                        { value: "dibatalkan", label: "Dibatalkan" },
+                        { value: "unpaid", label: "Belum Bayar" },
+                        { value: "partialy_paid", label: "Dibayar Sebagian" },
+                        { value: "paid", label: "Dibayar" },
+                        { value: "expired", label: "Expired" },
                     ],
                 }}
             />
             <div className="flex flex-col gap-4">
-                {/* {pageItems.map((tx) => (
-                    <TransactionRow
-                        key={tx.id}
-                        iconBgClass={
-                            tx.status === "dibayar"
-                                ? "bg-green-100"
-                                : tx.status === "pending"
-                                  ? "bg-amber-100"
-                                  : tx.status === "terlambat"
-                                    ? "bg-red-100"
-                                    : "bg-gray-100"
-                        }
-                        iconColor={
-                            tx.status === "dibayar"
-                                ? "oklch(72.3% 0.219 149.579)"
-                                : tx.status === "pending"
-                                  ? "orange"
-                                  : tx.status === "terlambat"
-                                    ? "red"
-                                    : "gray"
-                        }
-                        trxId={tx.id}
-                        methodLabel={tx.method}
-                        dueDateLabel={format(tx.dueDate, "d MMM yyyy")}
-                        paidDateLabel={
-                            tx.paidDate
-                                ? format(tx.paidDate, "d MMM yyyy")
-                                : undefined
-                        }
-                        amountLabel={formatAmount(tx.amount)}
-                        status={tx.status}
-                        statusLabel={
-                            tx.status === "dibayar"
-                                ? "Dibayar"
-                                : tx.status === "pending"
-                                  ? "Pending"
-                                  : tx.status === "terlambat"
-                                    ? "Terlambat"
-                                    : "Dibatalkan"
-                        }
-                        actionLabel={
-                            tx.status === "pending" ? "Bayar" : undefined
-                        }
-                    />
-                ))} */}
                 {invoices && invoices.length > 0 ? (
                     invoices.map((invoice) => {
                         const iconBg =
@@ -255,40 +210,54 @@ function Page() {
                                 ? "bg-green-100"
                                 : invoice.booking.status === "pending_payment"
                                   ? "bg-amber-100"
-                                  : invoice.booking.status === "cancelled"
-                                    ? "bg-red-100"
-                                    : "bg-gray-100";
+                                  : invoice.booking.status ===
+                                      "pending_approval"
+                                    ? "bg-purple-100"
+                                    : invoice.booking.status === "cancelled"
+                                      ? "bg-red-100"
+                                      : "bg-gray-100";
 
                         const iconColor =
                             invoice.booking.status === "confirmed"
                                 ? "oklch(72.3% 0.219 149.579)"
                                 : invoice.booking.status === "pending_payment"
                                   ? "orange"
-                                  : invoice.booking.status === "cancelled"
-                                    ? "red"
-                                    : "gray";
+                                  : invoice.booking.status ===
+                                      "pending_approval"
+                                    ? "purple"
+                                    : invoice.booking.status === "cancelled"
+                                      ? "red"
+                                      : "gray";
 
                         const statusLabel =
-                            invoice.booking.status === "confirmed"
-                                ? "Dikonfirmasi"
-                                : invoice.booking.status === "pending_payment"
-                                  ? "Pembayaran tertunda"
-                                  : invoice.booking.status === "cancelled"
-                                    ? "Dibatalkan"
-                                    : "Selesai";
-
-                        /**
-                         * pending_payment
-                            confirmed
-                            cancelled
-                            completed
-                         * 
-                         */
+                            invoice.status === "unpaid"
+                                ? "Belum Dibayar"
+                                : invoice.status === "partially_paid"
+                                  ? "Dibayar Sebagian"
+                                  : invoice.status === "paid"
+                                    ? "Dibayar"
+                                    : invoice.status === "expired"
+                                      ? "Expired"
+                                      : "Dibatalkan";
 
                         const actionLabel =
-                            invoice.booking.status === "pending_payment"
+                            (invoice.status === "unpaid" ||
+                                invoice.status === "partially_paid") &&
+                            invoice.booking.status !== "pending_approval"
                                 ? "Bayar"
                                 : undefined;
+                        const latestTransaction =
+                            invoice.transactions &&
+                            invoice.transactions.length > 0
+                                ? invoice.transactions.reduce(
+                                      (latest, current) =>
+                                          new Date(current.createdAt) >
+                                          new Date(latest.createdAt)
+                                              ? current
+                                              : latest,
+                                  )
+                                : null;
+
                         return (
                             <TransactionRow
                                 key={invoice.id}
@@ -297,15 +266,10 @@ function Page() {
                                 trxId={invoice.id}
                                 bookingId={invoice.bookingId}
                                 methodLabel={
-                                    invoice.transactions &&
-                                    invoice.transactions.length > 0
-                                        ? invoice.transactions[0]
-                                              .paymentMethod || "-"
-                                        : "-"
+                                    latestTransaction?.paymentMethod || "-"
                                 }
                                 dueDateLabel={
-                                    invoice.transactions &&
-                                    invoice.transactions.length > 0
+                                    invoice.dueDate
                                         ? formatDate(invoice.dueDate, {
                                               day: "numeric",
                                               month: "long",
@@ -314,27 +278,20 @@ function Page() {
                                         : "-"
                                 }
                                 paidDateLabel={
-                                    invoice.transactions &&
-                                    invoice.transactions.length > 0
-                                        ? formatDate(
-                                              invoice.transactions[0].paidAt,
-                                              {
-                                                  day: "numeric",
-                                                  month: "long",
-                                                  year: "numeric",
-                                              },
-                                          )
+                                    latestTransaction?.paidAt
+                                        ? formatDate(latestTransaction.paidAt, {
+                                              day: "numeric",
+                                              month: "long",
+                                              year: "numeric",
+                                          })
                                         : "-"
                                 }
                                 amountLabel={
-                                    invoice.transactions &&
-                                    invoice.transactions.length > 0
-                                        ? formatRupiah(
-                                              invoice.transactions[0].amount,
-                                          )
+                                    invoice.totalAmount
+                                        ? formatRupiah(invoice.totalAmount)
                                         : "-"
                                 }
-                                status={invoice.booking.status as BookingStatus}
+                                status={invoice.status}
                                 statusLabel={statusLabel}
                                 actionLabel={actionLabel}
                             />

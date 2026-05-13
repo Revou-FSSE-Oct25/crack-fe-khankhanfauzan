@@ -29,6 +29,7 @@ const badgeClassByStatus: Record<string, string> = {
     unpaid: "bg-amber-50 border-amber-200 text-amber-900",
     expired: "bg-gray-50 border-gray-200 text-gray-900",
     partially_paid: "bg-blue-50 border-blue-200 text-blue-900",
+    cancelled: "bg-red-50 border-red-200 text-red-900",
 };
 
 const formatInvoiceStatusLabel = (status: string) => {
@@ -41,6 +42,8 @@ const formatInvoiceStatusLabel = (status: string) => {
             return "Kedaluwarsa";
         case "partially_paid":
             return "Dibayar Sebagian";
+        case "cancelled":
+            return "Dibatalkan";
         default:
             return status;
     }
@@ -112,16 +115,29 @@ export default function InvoiceDetailPage() {
     const booking = invoice.booking;
     const room = booking?.room;
 
-    // Sort transactions by date descending so the latest is on top
+    // Sort transaksi by date descending agar terbaru yang paling atas
     const transactions = [...(invoice.transactions || [])].sort(
         (a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
     const latestTransaction = transactions.length > 0 ? transactions[0] : null;
 
+    // Kalkulasi total yang sudah dibayar (hanya transaksi yang sukses/verified)
+    const totalPaid = (invoice.transactions || [])
+        .filter((t) => t.status === "verified")
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const remainingAmount =
+        Number(invoice.totalAmount) +
+        Number(invoice.penaltyAmount || 0) -
+        totalPaid;
+
     const canPay =
-        invoice.status === "unpaid" &&
-        (!latestTransaction || latestTransaction.status === "rejected");
+        (invoice.status === "unpaid" || invoice.status === "partially_paid") &&
+        (!latestTransaction ||
+            latestTransaction.status === "rejected" ||
+            latestTransaction.status === "verified") &&
+        invoice.booking?.status !== "pending_approval";
 
     return (
         <div className="p-4 mx-auto space-y-6">
@@ -375,15 +391,22 @@ export default function InvoiceDetailPage() {
                                     </p>
                                 </div>
                             )}
+                            {totalPaid > 0 && (
+                                <div className="flex justify-between items-center border-b border-dashed pb-3">
+                                    <p className="text-sm text-emerald-600">
+                                        Sudah Dibayar
+                                    </p>
+                                    <p className="font-medium text-emerald-700">
+                                        - {formatRupiah(totalPaid)}
+                                    </p>
+                                </div>
+                            )}
                             <div className="flex justify-between items-center pt-1">
                                 <p className="text-sm font-semibold">
-                                    Total Bayar
+                                    Sisa Bayar
                                 </p>
                                 <p className="font-bold text-lg text-primary">
-                                    {formatRupiah(
-                                        Number(invoice.totalAmount) +
-                                            Number(invoice.penaltyAmount || 0),
-                                    )}
+                                    {formatRupiah(Math.max(0, remainingAmount))}
                                 </p>
                             </div>
 
