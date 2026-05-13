@@ -25,6 +25,7 @@ export interface Room {
     status: RoomStatus;
     facilities: Facility[];
     dimensions: RoomDimensions;
+    images?: string[];
 }
 
 export interface RoomMeta extends BasePaginationMeta {

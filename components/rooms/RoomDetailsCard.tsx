@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { FacilitiesList } from "@/components/property/FacilitiesList";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
     BathIcon,
     WifiIcon,
@@ -14,6 +15,7 @@ import {
     LampDeskIcon,
     ChefHatIcon,
     ZapIcon,
+    ImageIcon,
 } from "lucide-react";
 import type { Room, RoomStatus } from "@/types/rooms";
 import { Facility } from "@/types/facilities";
@@ -81,6 +83,29 @@ function RoomDetailsCard({
                         </p>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        {room.images && room.images.length > 0 ? (
+                            <div className="flex overflow-x-auto gap-2 pb-2 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                                {room.images.map((url, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="relative min-w-[200px] h-[140px] rounded-md overflow-hidden bg-muted snap-start shrink-0"
+                                    >
+                                        <Image
+                                            src={url}
+                                            alt={`Foto Kamar ${idx + 1}`}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center bg-muted/50 rounded-md h-[140px] text-muted-foreground gap-2">
+                                <ImageIcon className="w-8 h-8 opacity-50" />
+                                <span className="text-sm">Tidak ada foto</span>
+                            </div>
+                        )}
+
                         <div className="flex items-end gap-2 bg-emerald-50 px-4 py-3 rounded-md">
                             <p className="text-2xl font-bold">
                                 {formatIDR(room.price)}
@@ -93,7 +118,7 @@ function RoomDetailsCard({
                                     Ukuran
                                 </p>
                                 <p className="font-medium">
-                                    {`${room.dimensions?.area ?? 12}${room.dimensions?.unit ?? "m"}²`}
+                                    {`${room.dimensions?.area ?? (room.dimensions?.length && room.dimensions?.width ? room.dimensions.length * room.dimensions.width : 12)}${room.dimensions?.unit ?? "m"}²`}
                                 </p>
                             </div>
                             <div className="flex justify-between border-b pb-2">

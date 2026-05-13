@@ -39,6 +39,12 @@ export async function updateRoom(id: string, payload: UpdateRoomPayload, opts?: 
   });
 }
 
+export async function uploadRoomImages(id: string, payload: FormData, opts?: { token?: string }) {
+  return http.patch<ApiResponse<Room>>(`/rooms/${id}`, payload, {
+    headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,
+  });
+}
+
 export async function deleteRoom(id: string, opts?: { token?: string }) {
   return http.delete<ApiResponse<null>>(`/rooms/${id}`, {
     headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,

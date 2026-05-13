@@ -17,10 +17,21 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { fetchFacilities } from "@/services/facilities";
-import { updateRoom, deleteRoom } from "@/services/rooms";
+import { updateRoom, deleteRoom, uploadRoomImages } from "@/services/rooms";
 import type { Facility } from "@/types/facilities";
 import type { Room } from "@/types/rooms";
 import { getSession } from "@/actions/auth";
+import { XIcon, UploadCloudIcon } from "lucide-react";
+import Image from "next/image";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type FormValues = {
     roomNumber: string;
@@ -61,6 +72,50 @@ function RoomDetailsForm({ room }: RoomDetailsFormProps) {
 
     const facilitiesWatch = watch("facilities");
 
+    const [existingImages, setExistingImages] = useState<string[]>(
+        room?.images || [],
+    );
+    const [removedImages, setRemovedImages] = useState<string[]>([]);
+    const [newFiles, setNewFiles] = useState<File[]>([]);
+    const [newPreviews, setNewPreviews] = useState<string[]>([]);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const filesArray = Array.from(e.target.files);
+            const totalImages =
+                existingImages.length + newFiles.length + filesArray.length;
+            if (totalImages > 5) {
+                setAlertMessage(
+                    "Maksimal hanya 5 foto kamar yang diperbolehkan.",
+                );
+                return;
+            }
+            setNewFiles((prev) => [...prev, ...filesArray]);
+            setNewPreviews((prev) => [
+                ...prev,
+                ...filesArray.map((f) => URL.createObjectURL(f)),
+            ]);
+        }
+        // reset input value so the same file can be selected again if removed
+        e.target.value = "";
+    };
+
+    const handleRemoveExisting = (url: string) => {
+        setExistingImages((prev) => prev.filter((u) => u !== url));
+        setRemovedImages((prev) => [...prev, url]);
+    };
+
+    const handleRemoveNew = (index: number) => {
+        setNewFiles((prev) => prev.filter((_, i) => i !== index));
+        setNewPreviews((prev) => {
+            const copy = [...prev];
+            URL.revokeObjectURL(copy[index]);
+            copy.splice(index, 1);
+            return copy;
+        });
+    };
+
     useEffect(() => {
         const session = getSession();
         const token = session?.accessToken;
@@ -97,6 +152,16 @@ function RoomDetailsForm({ room }: RoomDetailsFormProps) {
             },
         };
         await updateRoom(String(room.id), payload, { token });
+
+        if (newFiles.length > 0 || removedImages.length > 0) {
+            const formData = new FormData();
+            newFiles.forEach((file) => formData.append("images", file));
+            removedImages.forEach((url) =>
+                formData.append("removeImages", url),
+            );
+            await uploadRoomImages(String(room.id), formData, { token });
+        }
+
         router.push("/admin/rooms");
     }
 
@@ -308,10 +373,99 @@ function RoomDetailsForm({ room }: RoomDetailsFormProps) {
                                     ))}
                                 </FieldGroup>
                             </div>
+
+                            <div className="flex flex-col gap-2 mt-4">
+                                <Label>Foto Kamar (Maksimal 5)</Label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                    {existingImages.map((url, idx) => (
+                                        <div
+                                            key={`existing-${idx}`}
+                                            className="relative aspect-square rounded-md overflow-hidden border bg-muted"
+                                        >
+                                            <Image
+                                                src={url}
+                                                alt={`Room photo ${idx + 1}`}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    handleRemoveExisting(url)
+                                                }
+                                                className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors"
+                                            >
+                                                <XIcon className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    {newPreviews.map((url, idx) => (
+                                        <div
+                                            key={`new-${idx}`}
+                                            className="relative aspect-square rounded-md overflow-hidden border bg-muted"
+                                        >
+                                            <Image
+                                                src={url}
+                                                alt={`New photo ${idx + 1}`}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    handleRemoveNew(idx)
+                                                }
+                                                className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors"
+                                            >
+                                                <XIcon className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    {existingImages.length + newFiles.length <
+                                        5 && (
+                                        <label className="relative aspect-square rounded-md border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground">
+                                            <UploadCloudIcon className="w-8 h-8" />
+                                            <span className="text-xs font-medium">
+                                                Upload Foto
+                                            </span>
+                                            <input
+                                                type="file"
+                                                accept="image/png, image/jpeg, image/jpg"
+                                                multiple
+                                                className="hidden"
+                                                onChange={handleFileChange}
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
+
+            <AlertDialog
+                open={!!alertMessage}
+                onOpenChange={() => setAlertMessage(null)}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Informasi</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {alertMessage}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction
+                            onClick={() => setAlertMessage(null)}
+                        >
+                            Mengerti
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
