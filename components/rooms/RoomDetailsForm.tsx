@@ -65,7 +65,7 @@ function RoomDetailsForm({ room }: RoomDetailsFormProps) {
         const session = getSession();
         const token = session?.accessToken;
 
-        fetchFacilities({ token })
+        fetchFacilities({ perPage: 100 }, { token })
             .then((value) => setFacilities(value.data))
             .catch(() => {});
     }, []);

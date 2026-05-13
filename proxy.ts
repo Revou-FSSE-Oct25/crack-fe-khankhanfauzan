@@ -38,14 +38,18 @@ export async function proxy(req: NextRequest) {
 
     if (path.startsWith("/admin")) {
         if (session?.role !== "admin") {
-            return NextResponse.redirect(new URL("/", req.url));
+            const loginUrl = new URL("/login", req.url);
+            loginUrl.searchParams.set("redirect", path);
+            return NextResponse.redirect(loginUrl);
         }
         return NextResponse.next();
     }
 
     if (path.startsWith("/user")) {
         if (session?.role !== "tenant") {
-            return NextResponse.redirect(new URL("/", req.url));
+            const loginUrl = new URL("/login", req.url);
+            loginUrl.searchParams.set("redirect", path);
+            return NextResponse.redirect(loginUrl);
         }
         return NextResponse.next();
     }
