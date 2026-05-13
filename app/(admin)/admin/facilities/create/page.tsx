@@ -12,6 +12,7 @@ import { createFacility } from "@/services/facilities";
 import { useRouter } from "next/navigation";
 import { getSession } from "@/actions/auth";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
 
 type FormValues = {
     name: string;
@@ -44,10 +45,12 @@ export default function Page() {
             };
             await createFacility(payload, { token });
             reset();
+            toast.success("Fasilitas berhasil dibuat");
             router.push("/admin/facilities");
         } catch (e: any) {
             const msg = e?.message || "Gagal membuat fasilitas";
             setErrorMsg(msg);
+            toast.error(msg);
         } finally {
             setIsSubmitting(false);
         }

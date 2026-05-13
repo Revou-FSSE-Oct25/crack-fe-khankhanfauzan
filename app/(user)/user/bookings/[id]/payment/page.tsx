@@ -54,6 +54,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { formatRupiah } from "@/utils/format";
 import Image from "next/image";
 import { ApiResponse } from "@/types/types";
+import { toast } from "sonner";
 
 const BANK_DETAILS = {
     bankName: "Bank Mandiri",
@@ -123,6 +124,7 @@ function BookingPaymentPage() {
 
         const invoice = booking.invoices?.[0];
         if (!invoice) {
+            toast.error("Invoice tidak ditemukan untuk booking ini.");
             setAlertConfig({
                 title: "Error",
                 description: "Invoice tidak ditemukan untuk booking ini.",
@@ -133,6 +135,7 @@ function BookingPaymentPage() {
         }
 
         if (!file) {
+            toast.error("Silakan upload bukti pembayaran terlebih dahulu.");
             setAlertConfig({
                 title: "File Diperlukan",
                 description: "Silakan upload bukti pembayaran terlebih dahulu.",
@@ -163,6 +166,7 @@ function BookingPaymentPage() {
             formData.append("file", file!);
 
             await uploadPaymentProof(formData, { token: session?.accessToken });
+            toast.success("Bukti pembayaran berhasil diunggah!");
             setAlertConfig({
                 title: "Berhasil",
                 description: "Bukti pembayaran berhasil diunggah!",
@@ -172,12 +176,14 @@ function BookingPaymentPage() {
             setAlertOpen(true);
         } catch (error: any) {
             console.error("Upload payment error:", error);
+            const msg =
+                error?.response?.data?.message ||
+                error.message ||
+                "Gagal mengunggah bukti pembayaran";
+            toast.error(msg);
             setAlertConfig({
                 title: "Gagal",
-                description:
-                    error?.response?.data?.message ||
-                    error.message ||
-                    "Gagal mengunggah bukti pembayaran",
+                description: msg,
                 type: "error",
             });
             setAlertOpen(true);

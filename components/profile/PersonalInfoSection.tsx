@@ -43,6 +43,7 @@ import { AlertBanner } from "@/components/ui/alert-banner";
 import type { User } from "@/types/users";
 import Image from "next/image";
 import { getSession } from "@/actions/auth";
+import { toast } from "sonner";
 
 type FormValues = {
     fullname: string;
@@ -175,11 +176,14 @@ export function PersonalInfoSection({ user }: { user: User | null }) {
 
             setIsEditing(false);
             setBanner({ type: "success", text: "Profil berhasil diperbarui" });
+            toast.success("Profil berhasil diperbarui");
         } catch (error: any) {
+            const msg = error?.message || "Gagal memperbarui profil";
             setBanner({
                 type: "error",
-                text: error?.message || "Gagal memperbarui profil",
+                text: msg,
             });
+            toast.error(msg);
         }
     }
 

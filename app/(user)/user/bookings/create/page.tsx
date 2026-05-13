@@ -50,6 +50,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState, Suspense } from "react";
 import { useForm, Controller } from "react-hook-form";
+import { toast } from "sonner";
 
 type BookingFormInputs = {
     rentType: RentType;
@@ -177,6 +178,11 @@ function BookingForm() {
             );
 
             if (response.data && response.data.id) {
+                toast.success(
+                    isExtension
+                        ? "Perpanjangan berhasil dibuat"
+                        : "Booking berhasil dibuat",
+                );
                 router.push(`/user/bookings/${response.data.id}/payment`);
             }
         } catch (error: any) {
@@ -192,6 +198,7 @@ function BookingForm() {
                 type: "error",
             });
             setAlertOpen(true);
+            toast.error(msg);
         } finally {
             setIsSubmitting(false);
         }

@@ -24,6 +24,7 @@ import { getSession } from "@/actions/auth";
 import { XIcon, UploadCloudIcon } from "lucide-react";
 import Image from "next/image";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -168,10 +169,12 @@ function RoomDetailsForm({ room }: RoomDetailsFormProps) {
             }
 
             setErrorMsg(null);
+            toast.success("Kamar berhasil diperbarui");
             router.push("/admin/rooms");
         } catch (e: any) {
             const msg = e?.message || "Gagal menyimpan perubahan";
             setErrorMsg(msg);
+            toast.error(msg);
         } finally {
             setIsSaving(false);
         }
@@ -179,11 +182,21 @@ function RoomDetailsForm({ room }: RoomDetailsFormProps) {
 
     async function onDelete() {
         if (!room?.id) return;
-        const session = getSession();
-        const token = session?.accessToken;
+        setIsSaving(true);
+        try {
+            const session = getSession();
+            const token = session?.accessToken;
 
-        await deleteRoom(String(room.id), { token });
-        router.push("/admin/rooms");
+            await deleteRoom(String(room.id), { token });
+            toast.success("Kamar berhasil dihapus");
+            router.push("/admin/rooms");
+        } catch (e: any) {
+            const msg = e?.message || "Gagal menghapus kamar";
+            setErrorMsg(msg);
+            toast.error(msg);
+        } finally {
+            setIsSaving(false);
+        }
     }
 
     function toggleFacility(val: number, checked: boolean) {

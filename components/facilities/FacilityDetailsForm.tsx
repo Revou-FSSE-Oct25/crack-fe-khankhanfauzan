@@ -13,6 +13,7 @@ import { updateFacility, deleteFacility } from "@/services/facilities";
 import type { Facility } from "@/types/facilities";
 import { getSession } from "@/actions/auth";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -63,11 +64,13 @@ export default function FacilityDetailsForm({
                 description: values.description || null,
             };
             await updateFacility(facility.id, payload, { token });
+            toast.success("Fasilitas berhasil diperbarui");
             router.push("/admin/facilities");
             router.refresh();
         } catch (e: any) {
             const msg = e?.message || "Gagal memperbarui fasilitas";
             setErrorMsg(msg);
+            toast.error(msg);
         } finally {
             setIsSubmitting(false);
         }
@@ -84,11 +87,13 @@ export default function FacilityDetailsForm({
             const token = session?.accessToken;
 
             await deleteFacility(facility.id, { token });
+            toast.success("Fasilitas berhasil dihapus");
             router.push("/admin/facilities");
             router.refresh();
         } catch (e: any) {
             const msg = e?.message || "Gagal menghapus fasilitas";
             setErrorMsg(msg);
+            toast.error(msg);
             setIsDeleting(false);
         }
     }

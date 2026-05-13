@@ -24,6 +24,7 @@ import { getSession } from "@/actions/auth";
 import { CheckCircle2, UploadCloudIcon, XIcon } from "lucide-react";
 import Image from "next/image";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -147,9 +148,11 @@ export default function Page() {
             setNewPreviews([]);
             setErrorMsg(null);
             setIsSuccessModalOpen(true);
+            toast.success("Kamar berhasil ditambahkan");
         } catch (e: any) {
             const msg = e?.message || "Gagal membuat kamar";
             setErrorMsg(msg);
+            toast.error(msg);
         } finally {
             setIsSaving(false);
         }
