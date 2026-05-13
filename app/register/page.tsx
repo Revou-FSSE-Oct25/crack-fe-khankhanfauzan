@@ -23,6 +23,7 @@ import { register as registerApi } from "@/services/auth";
 import { useRouter } from "next/navigation";
 import type { ApiError } from "@/lib/http/client";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
 
 function Page() {
     const [showPassword, setShowPassword] = useState(false);
@@ -61,13 +62,18 @@ function Page() {
                 confirmPassword: data.confirmPassword,
             });
             if (res?.status === 201 || res?.status === 200) {
+                toast.success("Pendaftaran berhasil, silakan login");
                 router.push("/login");
                 return;
             }
-            setErrorMsg(res?.message || "Pendaftaran gagal");
-        } catch (e) {
-            const err = e as ApiError;
-            setErrorMsg(err?.message || "Pendaftaran gagal");
+            const msg = res?.message || "Pendaftaran gagal";
+            setErrorMsg(msg);
+            toast.error(msg);
+        } catch (e: any) {
+            const msg =
+                e?.response?.data?.message || e?.message || "Pendaftaran gagal";
+            setErrorMsg(msg);
+            toast.error(msg);
         } finally {
             setLoading(false);
         }
