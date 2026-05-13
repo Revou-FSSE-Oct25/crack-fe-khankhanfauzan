@@ -125,44 +125,52 @@ function RoomDetailsForm({ room }: RoomDetailsFormProps) {
             .catch(() => {});
     }, []);
 
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
     async function onSubmit(values: FormValues) {
         if (!room?.id) return;
-        const session = getSession();
-        const token = session?.accessToken;
+        try {
+            const session = getSession();
+            const token = session?.accessToken;
 
-        const selectedFacilities = facilities
-            .filter((f) => (facilitiesWatch ?? []).includes(f.id))
-            .map((f) => ({
-                id: f.id,
-                name: f.name,
-                description: f.description ?? null,
-            }));
-        const payload = {
-            roomNumber: values.roomNumber,
-            floor: values.floor ?? 0,
-            roomType: values.roomType || "standard",
-            price: values.price ?? 0,
-            status: values.status,
-            facilities: selectedFacilities,
-            dimensions: {
-                length: values.length ?? 0,
-                width: values.width ?? 0,
-                area: values.area,
-                unit: values.unit ?? "m",
-            },
-        };
-        await updateRoom(String(room.id), payload, { token });
+            const selectedFacilities = facilities
+                .filter((f) => (facilitiesWatch ?? []).includes(f.id))
+                .map((f) => ({
+                    id: f.id,
+                    name: f.name,
+                    description: f.description ?? null,
+                }));
+            const payload = {
+                roomNumber: values.roomNumber,
+                floor: values.floor ?? 0,
+                roomType: values.roomType || "standard",
+                price: values.price ?? 0,
+                status: values.status,
+                facilities: selectedFacilities,
+                dimensions: {
+                    length: values.length ?? 0,
+                    width: values.width ?? 0,
+                    area: values.area,
+                    unit: values.unit ?? "m",
+                },
+            };
+            await updateRoom(String(room.id), payload, { token });
 
-        if (newFiles.length > 0 || removedImages.length > 0) {
-            const formData = new FormData();
-            newFiles.forEach((file) => formData.append("images", file));
-            removedImages.forEach((url) =>
-                formData.append("removeImages", url),
-            );
-            await uploadRoomImages(String(room.id), formData, { token });
+            if (newFiles.length > 0 || removedImages.length > 0) {
+                const formData = new FormData();
+                newFiles.forEach((file) => formData.append("images", file));
+                removedImages.forEach((url) =>
+                    formData.append("removeImages", url),
+                );
+                await uploadRoomImages(String(room.id), formData, { token });
+            }
+
+            setErrorMsg(null);
+            router.push("/admin/rooms");
+        } catch (e: any) {
+            const msg = e?.message || "Gagal menyimpan perubahan";
+            setErrorMsg(msg);
         }
-
-        router.push("/admin/rooms");
     }
 
     async function onDelete() {
@@ -201,6 +209,11 @@ function RoomDetailsForm({ room }: RoomDetailsFormProps) {
                         <CardTitle>{room?.roomNumber ?? ""}</CardTitle>
                     </CardHeader>
                     <CardContent>
+                        {errorMsg && (
+                            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
+                                {errorMsg}
+                            </div>
+                        )}
                         <div className="grid grid-cols-1 gap-4">
                             <div className="flex flex-col gap-2">
                                 <Label htmlFor="roomNumber">Room Number</Label>

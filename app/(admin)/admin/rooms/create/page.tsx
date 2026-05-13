@@ -144,8 +144,8 @@ export default function Page() {
             setNewPreviews([]);
             setErrorMsg(null);
             setIsSuccessModalOpen(true);
-        } catch (e) {
-            const msg = e instanceof Error ? e.message : "Gagal membuat kamar";
+        } catch (e: any) {
+            const msg = e?.message || "Gagal membuat kamar";
             setErrorMsg(msg);
         }
     }
@@ -163,8 +163,8 @@ export default function Page() {
 
         fetchFacilities({ page: 1, perPage: 100 }, { token })
             .then((value) => setFacilities(value.data))
-            .catch((e) =>
-                setErrorMsg(e instanceof Error ? e.message : String(e)),
+            .catch((e: any) =>
+                setErrorMsg(e?.message || "Gagal memuat data fasilitas"),
             )
             .finally();
     }, []);
@@ -208,6 +208,11 @@ export default function Page() {
                         <CardTitle>Informasi Kamar</CardTitle>
                     </CardHeader>
                     <CardContent>
+                        {errorMsg && (
+                            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
+                                {errorMsg}
+                            </div>
+                        )}
                         <div className="grid grid-cols-1 gap-4">
                             <div className="flex flex-col gap-2">
                                 <Label htmlFor="roomNumber">Room Number</Label>
