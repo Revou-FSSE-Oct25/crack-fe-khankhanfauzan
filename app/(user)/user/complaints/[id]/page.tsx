@@ -249,25 +249,28 @@ export default function ComplaintDetailPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-4">
-                            {complaint.images &&
-                            complaint.images.filter((img) => img.imageUrl)
-                                .length > 0 ? (
+                            {complaint.images && complaint.images.length > 0 ? (
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                    {complaint.images
-                                        .filter((img) => img.imageUrl)
-                                        .map((img, index) => (
+                                    {complaint.images.map((img, index) => {
+                                        // Handle both string array and object array formats
+                                        const imageUrl = typeof img === 'string' ? img : (img as any).imageUrl;
+                                        
+                                        if (!imageUrl) return null;
+                                        
+                                        return (
                                             <div
-                                                key={img.id || `img-${index}`}
+                                                key={typeof img === 'string' ? `img-${index}` : (img as any).id || `img-${index}`}
                                                 className="relative aspect-square rounded-lg overflow-hidden border"
                                             >
                                                 <Image
-                                                    src={img.imageUrl}
+                                                    src={imageUrl.replace(/[`"]/g, '').trim()} // Clean up potential backticks from API response
                                                     alt={`Lampiran Komplain ${index + 1}`}
                                                     fill
                                                     className="object-cover hover:scale-105 transition-transform"
                                                 />
                                             </div>
-                                        ))}
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <div className="text-center py-8 text-muted-foreground bg-gray-50 rounded-lg border border-dashed">

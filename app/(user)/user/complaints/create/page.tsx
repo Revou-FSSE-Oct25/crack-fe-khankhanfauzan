@@ -3,7 +3,7 @@
 import { createMaintenance } from "@/services/maintenances";
 import { getSession } from "@/actions/auth";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -25,11 +25,14 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
-import { ArrowLeftIcon, UploadIcon, XIcon } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ArrowLeftIcon, UploadIcon, XIcon, HomeIcon } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ComplaintCategory } from "@/types/maintenances";
 import Image from "next/image";
+import { fetchTenantDashboard } from "@/services/dashboard";
+import { TenantDashboardData } from "@/types/tenant-dashboard";
 
 const formSchema = z.object({
     category: z.string().min(1, "Kategori harus dipilih"),
@@ -40,9 +43,26 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function CreateComplaintPage() {
     const router = useRouter();
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [images, setImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+    const [tenantDashboard, setTenantDashboard] =
+        useState<TenantDashboardData | null>(null);
+
+    useEffect(() => {
+        const session = getSession();
+        if (!session?.accessToken) {
+            setLoading(false);
+            return;
+        }
+
+        fetchTenantDashboard({ token: session.accessToken })
+            .then((value) => setTenantDashboard(value.data))
+            .catch((e) => setErrorMsg(e.message))
+            .finally(() => setLoading(false));
+    }, []);
 
     const {
         control,
@@ -105,6 +125,12 @@ export default function CreateComplaintPage() {
             const token = session?.accessToken;
 
             const payload = new FormData();
+            if (tenantDashboard?.activeBooking?.roomId) {
+                payload.append(
+                    "roomId",
+                    String(tenantDashboard.activeBooking.roomId),
+                );
+            }
             payload.append("category", data.category);
             payload.append("description", data.description);
 
@@ -123,6 +149,36 @@ export default function CreateComplaintPage() {
             setLoading(false);
         }
     };
+
+    if (!loading && !tenantDashboard?.activeBooking) {
+        return (
+            <div className="p-4 mx-auto space-y-6">
+                <div className="flex items-center gap-4">
+                    <Link href="/user/complaints">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="rounded-full"
+                        >
+                            <ArrowLeftIcon className="w-5 h-5" />
+                        </Button>
+                    </Link>
+                    <h1 className="text-xl font-bold">Buat Komplain Baru</h1>
+                </div>
+
+                <EmptyState
+                    title="Tidak ada kamar aktif"
+                    description="Anda tidak dapat membuat komplain karena Anda belum memiliki booking kamar yang aktif saat ini."
+                    icon={HomeIcon}
+                    action={
+                        <Link href="/rooms">
+                            <Button>Pesan Kamar</Button>
+                        </Link>
+                    }
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="p-4 mx-auto space-y-6">
@@ -180,13 +236,13 @@ export default function CreateComplaintPage() {
                                             <SelectItem value="electrical">
                                                 Kelistrikan (Electrical)
                                             </SelectItem>
-                                            <SelectItem value="ac">
-                                                AC (Air Conditioning)
+                                            <SelectItem value="internet">
+                                                WiFi (Internet)
                                             </SelectItem>
                                             <SelectItem value="furniture">
                                                 Perabotan (Furniture)
                                             </SelectItem>
-                                            <SelectItem value="others">
+                                            <SelectItem value="other">
                                                 Lainnya (Others)
                                             </SelectItem>
                                         </SelectContent>

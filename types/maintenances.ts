@@ -37,7 +37,7 @@ export interface Maintenance {
   resolvedAt?: string;
   createdAt: string;
   updatedAt: string;
-  images: MaintenanceImage[];
+  images: string[] | MaintenanceImage[];
   room?: MaintenanceRoom;
   tenant: MaintenanceTenant;
 }
