@@ -5,7 +5,13 @@ import { getBookingById } from "@/services/bookings";
 import { Booking } from "@/types/bookings";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
@@ -25,6 +31,7 @@ import {
     FileTextIcon,
     HomeIcon,
     MapPinIcon,
+    StarIcon,
     UserIcon,
 } from "lucide-react";
 import { Status } from "@/components/bookings/BookingRow";
@@ -354,6 +361,30 @@ function Page() {
                             )}
                         </CardContent>
                     </Card>
+                    {booking.status === "completed" && (
+                        <Card className="shadow-none">
+                            <CardContent>
+                                <CardDescription>
+                                    Berikan ulasan untuk booking ini
+                                </CardDescription>
+                                <Link
+                                    href={`/user/reviews/create?bookingId=${booking.id}`}
+                                    className="block mt-4"
+                                >
+                                    <Button
+                                        variant="default"
+                                        className="w-full rounded-full"
+                                    >
+                                        <StarIcon
+                                            fill="white"
+                                            className="mr-2 w-4 h-4"
+                                        />
+                                        Ulas
+                                    </Button>
+                                </Link>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
             </div>
         </div>

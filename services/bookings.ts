@@ -44,3 +44,9 @@ export async function rejectBooking(id: string, opts?: { token?: string }) {
         headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,
     });
 }
+
+export async function checkoutBooking(id: string, opts?: { token?: string }) {
+    return http.patch<ApiResponse<Booking>>(`/bookings/${id}/checkout`, {}, {
+        headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,
+    });
+}

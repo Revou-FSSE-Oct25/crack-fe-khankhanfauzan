@@ -5,6 +5,7 @@ import {
     getBookingById,
     approveBooking,
     rejectBooking,
+    checkoutBooking,
 } from "@/services/bookings";
 import { Booking } from "@/types/bookings";
 import { useParams, useRouter } from "next/navigation";
@@ -143,6 +144,32 @@ function page() {
                         token: session?.accessToken,
                     });
                     toast.success("Booking berhasil ditolak.");
+                    fetchBooking();
+                } catch (error: any) {
+                    toast.error(error.message || "Gagal menolak booking");
+                } finally {
+                    setIsUpdating(false);
+                }
+            },
+        });
+        setAlertOpen(true);
+    };
+
+    const handleCheckout = () => {
+        setAlertConfig({
+            title: "Checkout",
+            description:
+                "Apakah Anda yakin ingin menyelesaikan sewa booking ini? Tindakan ini tidak dapat dibatalkan.",
+            actionText: "Chekout",
+            actionVariant: "destructive",
+            onConfirm: async () => {
+                setIsUpdating(true);
+                try {
+                    const session = getSession();
+                    await checkoutBooking(bookingId, {
+                        token: session?.accessToken,
+                    });
+                    toast.success("Checkout berhasil.");
                     fetchBooking();
                 } catch (error: any) {
                     toast.error(error.message || "Gagal menolak booking");
@@ -517,6 +544,33 @@ function page() {
                                         <XIcon className="w-4 h-4 mr-2" />
                                     )}
                                     Tolak Booking
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    )}
+                    {/* Checkout */}
+                    {status === "confirmed" && (
+                        <Card className="shadow-none border-red-200 bg-red-50/50">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base flex items-center gap-2 text-red-900">
+                                    Checkout
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <p className="text-sm text-red-800 mb-2">
+                                    Selesaikan masa sewa.
+                                </p>
+                                <Button
+                                    className="w-full bg-red-600 hover:bg-red-700 text-white"
+                                    onClick={handleCheckout}
+                                    disabled={isUpdating}
+                                >
+                                    {isUpdating ? (
+                                        <Spinner className="w-4 h-4 mr-2" />
+                                    ) : (
+                                        <CheckIcon className="w-4 h-4 mr-2" />
+                                    )}
+                                    Checkout
                                 </Button>
                             </CardContent>
                         </Card>
