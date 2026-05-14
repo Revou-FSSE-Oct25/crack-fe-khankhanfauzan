@@ -155,7 +155,19 @@ function page() {
                                 <Card key={review.id}>
                                     <CardContent className="flex gap-4 items-start">
                                         <Avatar size="lg">
-                                            <AvatarImage src="https://i.pravatar.cc/300" />
+                                            <AvatarImage
+                                                src={
+                                                    review.booking?.tenant
+                                                        ?.profile
+                                                        ?.fotoProfileUrl ||
+                                                    undefined
+                                                }
+                                                alt={
+                                                    review.booking?.tenant
+                                                        ?.profile?.fullName ||
+                                                    undefined
+                                                }
+                                            />
                                             <AvatarFallback>
                                                 {getInitials(
                                                     review.booking?.tenant

@@ -26,7 +26,10 @@ export type LandingPageFeaturedReview = {
     comment: string | null;
     booking: {
         tenant: {
-            profile: { fullName: string | null; } | null;
+            profile: {
+                fullName: string | null;
+                fotoProfileUrl: string | null;
+            } | null;
         } | null;
     } | null;
 }
