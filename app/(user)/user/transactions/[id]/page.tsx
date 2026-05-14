@@ -421,7 +421,7 @@ export default function InvoiceDetailPage() {
 
                             {canPay && booking && (
                                 <Link
-                                    href={`/user/bookings/${booking.id}/payment?roomId=${booking.roomId}&price=${booking.pricePerUnit}&floor=${room?.floor}&size=${room?.area}`}
+                                    href={`/user/transactions/${invoice.id}/payment`}
                                     className="block mt-4"
                                 >
                                     <Button className="w-full rounded-full">

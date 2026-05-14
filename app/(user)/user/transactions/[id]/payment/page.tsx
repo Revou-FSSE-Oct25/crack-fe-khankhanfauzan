@@ -47,9 +47,8 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { getSession } from "@/actions/auth";
-import { getBookingById } from "@/services/bookings";
-import { uploadPaymentProof } from "@/services/transactions";
-import { Booking } from "@/types/bookings";
+import { getInvoiceById, uploadPaymentProof } from "@/services/transactions";
+import { Invoice } from "@/types/invoices";
 import { Spinner } from "@/components/ui/spinner";
 import { formatRupiah } from "@/utils/format";
 import Image from "next/image";
@@ -68,9 +67,9 @@ function BookingPaymentPage() {
     const params = useParams();
     const router = useRouter();
 
-    const bookingId = String(params?.id ?? "");
+    const invoiceId = String(params?.id ?? "");
 
-    const [booking, setBooking] = useState<ApiResponse<Booking>["data"] | null>(
+    const [invoice, setInvoice] = useState<ApiResponse<Invoice>["data"] | null>(
         null,
     );
     const [loading, setLoading] = useState(true);
@@ -93,18 +92,25 @@ function BookingPaymentPage() {
     } | null>(null);
 
     useEffect(() => {
-        if (!bookingId) return;
+        if (!invoiceId) return;
         const session = getSession();
-        getBookingById(bookingId, { token: session?.accessToken })
+        getInvoiceById(invoiceId, { token: session?.accessToken })
             .then((res) => {
-                setBooking(res.data);
-                setDpAmount(res.data.totalPrice); // default dp to full amount
-            })
-            .catch((e) => setErrorMsg(e.message))
-            .finally(() => setLoading(false));
-    }, [bookingId]);
+                setInvoice(res.data);
 
-    const total = booking?.totalPrice || 0;
+                const remainingAmount =
+                    res.data.paymentDetails?.remainingAmount ?? 0;
+                setDpAmount(remainingAmount); // default dp to remaining amount
+            })
+            .catch((e: any) => setErrorMsg(e.message))
+            .finally(() => setLoading(false));
+    }, [invoiceId]);
+
+    const totalPaid = invoice?.paymentDetails?.totalPaid ?? 0;
+    const penaltyAmount = Number(invoice?.penaltyAmount || 0);
+    const total = invoice?.paymentDetails?.remainingAmount ?? 0;
+    const booking = invoice?.booking;
+
     const dueNow = useMemo(
         () => (payType === "lunas" ? total : Math.min(dpAmount || 0, total)),
         [payType, total, dpAmount],
@@ -120,19 +126,7 @@ function BookingPaymentPage() {
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!booking) return;
-
-        const invoice = booking.invoices?.[0];
-        if (!invoice) {
-            toast.error("Invoice tidak ditemukan untuk booking ini.");
-            setAlertConfig({
-                title: "Error",
-                description: "Invoice tidak ditemukan untuk booking ini.",
-                type: "error",
-            });
-            setAlertOpen(true);
-            return;
-        }
+        if (!invoice) return;
 
         if (!file) {
             toast.error("Silakan upload bukti pembayaran terlebih dahulu.");
@@ -150,7 +144,7 @@ function BookingPaymentPage() {
             description:
                 "Apakah anda yakin ingin mengirim bukti pembayaran ini?",
             type: "confirm",
-            onConfirm: () => proceedPayment(invoice.id),
+            onConfirm: () => proceedPayment(invoiceId),
         });
         setAlertOpen(true);
     };
@@ -171,7 +165,7 @@ function BookingPaymentPage() {
                 title: "Berhasil",
                 description: "Bukti pembayaran berhasil diunggah!",
                 type: "success",
-                onConfirm: () => router.push("/user/bookings"),
+                onConfirm: () => router.push("/user/transactions"),
             });
             setAlertOpen(true);
         } catch (error: any) {
@@ -194,11 +188,11 @@ function BookingPaymentPage() {
 
     if (loading) return <Spinner className="items-center" />;
 
-    if (errorMsg || !booking) {
+    if (errorMsg || !invoice || !booking) {
         return (
             <div className="p-4 max-w-6xl mx-auto space-y-4">
                 <p className="text-red-500">
-                    Error: {errorMsg || "Booking tidak ditemukan"}
+                    Error: {errorMsg || "Tagihan tidak ditemukan"}
                 </p>
             </div>
         );
@@ -246,7 +240,7 @@ function BookingPaymentPage() {
                     Pembayaran Booking
                 </h1>
                 <Badge className="bg-emerald-50 text-emerald-900">
-                    ID {bookingId.slice(0, 8).toUpperCase()}
+                    ID {invoiceId.slice(0, 8).toUpperCase()}
                 </Badge>
             </div>
 
@@ -430,7 +424,9 @@ function BookingPaymentPage() {
                                                 size={16}
                                             />
                                             <p className="text-sm text-muted-foreground">
-                                                Total Biaya
+                                                {totalPaid > 0
+                                                    ? "Sisa Tagihan"
+                                                    : "Total Biaya"}
                                             </p>
                                         </div>
                                         <p className="text-xl font-bold">
@@ -515,7 +511,9 @@ function BookingPaymentPage() {
                         </div>
                         <div className="rounded-md bg-muted px-3 py-2">
                             <div className="flex items-center justify-between">
-                                <p className="text-sm">Total</p>
+                                <p className="text-sm">
+                                    {totalPaid > 0 ? "Sisa Tagihan" : "Total"}
+                                </p>
                                 <p className="text-lg font-semibold">
                                     {formatRupiah(total)}
                                 </p>
@@ -535,9 +533,7 @@ function BookingPaymentPage() {
                         </div>
                         <div className="text-xs text-muted-foreground">
                             Invoice ID:{" "}
-                            {booking.invoices?.[0]?.id
-                                .slice(0, 8)
-                                .toUpperCase() || "-"}
+                            {invoice?.id.slice(0, 8).toUpperCase() || "-"}
                         </div>
                     </CardContent>
                 </Card>

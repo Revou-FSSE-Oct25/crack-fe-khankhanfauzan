@@ -84,6 +84,11 @@ export type Invoice = {
         }
     };
     transactions: InvoiceTransaction[];
+    paymentDetails?: {
+        totalBilled: number;
+        totalPaid: number;
+        remainingAmount: number;
+    };
 };
 
 // ==========================================
