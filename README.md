@@ -19,13 +19,14 @@ Comprehensive frontend application for Emerald Kos (Boarding House) Management, 
 - **Frontend Application**: [https://crack-fe-khankhanfauzan.vercel.app](https://crack-fe-khankhanfauzan.vercel.app)
 - **Backend API (Swagger)**: [https://crack-be-khankhanfauzan.onrender.com/api](https://crack-be-khankhanfauzan.onrender.com/api)
 
-*(Note: The backend is hosted on Render's free tier and may take ~1-2 minutes to spin up on the first request).*
+_(Note: The backend is hosted on Render's free tier and may take ~1-2 minutes to spin up on the first request)._
 
 ---
 
 ## ✨ List of Features
 
 ### 🏢 Admin Features
+
 - **Dashboard Summary**: View key metrics (Total Tenants, Occupancy, Outstanding Invoices), recent activities, and maintenance tickets in real-time.
 - **Room Management**: Monitor room availability and statuses.
 - **Booking Approvals**: Review tenant KYC documents (KTP, Marriage Certificate) and approve/reject booking requests.
@@ -34,10 +35,12 @@ Comprehensive frontend application for Emerald Kos (Boarding House) Management, 
 - **Maintenance Tracking**: Update the status of tenant complaints (`open`, `in_progress`, `resolved`, `closed`) and add admin notes.
 
 ### 👤 Tenant Features
+
 - **Browse & Search Rooms**: Interactive grid and list view to search, filter (by status), and select available rooms.
 - **Booking System**: Select rent type (Daily/Monthly/Yearly), duration, and start date. Supports indefinite extension for current tenants.
-- **Payment Portal**: Upload payment proofs (`multipart/form-data`) securely for pending invoices.
-- **Maintenance & Complaints**: Submit maintenance requests with photo evidence.
+- **Payment Portal**: Upload payment proofs (`multipart/form-data`) securely for pending invoices. Supports Down Payment (DP) and calculating remaining balance automatically.
+- **Maintenance & Complaints**: Submit maintenance requests with photo evidence based on currently active bookings.
+- **Reviews & Ratings**: Submit reviews (rating and comments) for completed or active room bookings.
 - **Profile & KYC**: Complete user profile and upload mandatory KYC documents (KTP, Marriage Book) before booking.
 - **Personal Dashboard**: View active bookings, upcoming invoice due dates, and recent transactions.
 
@@ -46,53 +49,88 @@ Comprehensive frontend application for Emerald Kos (Boarding House) Management, 
 ## 🛠 Installation & Usage Instructions
 
 ### Prerequisites
+
 - Node.js (v18 or higher)
 - npm, yarn, or pnpm
 
 ### Setup
+
 1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd crack-fe-khankhanfauzan
-   ```
+
+    ```bash
+    git clone <repository-url>
+    cd crack-fe-khankhanfauzan
+    ```
 
 2. **Install dependencies:**
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
+
+    ```bash
+    npm install
+    # or
+    yarn install
+    ```
 
 3. **Environment Variables:**
    Create a `.env.local` file in the root directory and add the backend API URL:
-   ```env
-   NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
-   # Or the production URL:
-   # NEXT_PUBLIC_API_BASE_URL=https://crack-be-khankhanfauzan.onrender.com
-   ```
+
+    ```env
+    NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
+    # Or the production URL:
+    # NEXT_PUBLIC_API_BASE_URL=https://crack-be-khankhanfauzan.onrender.com
+    ```
 
 4. **Run the development server:**
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
+
+    ```bash
+    npm run dev
+    # or
+    yarn dev
+    ```
 
 5. **Access the application:**
    Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
+## 📁 Project Structure
+
+Here is a high-level overview of the important directories and files in this Next.js project:
+
+```text
+crack-fe-khankhanfauzan/
+├── actions/               # Next.js Server Actions (e.g., auth session handling)
+├── app/                   # Next.js App Router (Pages, Layouts, APIs)
+│   ├── (admin)/           # Route group for Admin panel pages
+│   ├── (auth)/            # Route group for Login/Register pages
+│   ├── (marketing)/       # Route group for Landing page
+│   └── (user)/            # Route group for Tenant/User dashboard pages
+├── components/            # Reusable UI Components
+│   ├── layout/            # Layout components (Sidebar, Navbar)
+│   ├── sections/          # Page-specific sections
+│   └── ui/                # Base Shadcn UI components (Buttons, Cards, Dialogs)
+├── lib/                   # Utility libraries and configurations
+│   ├── http/              # Custom Axios HTTP client & interceptors
+│   └── utils.ts           # Helper functions (e.g., Tailwind class merger)
+├── services/              # API Service wrappers for fetching Backend data
+├── types/                 # TypeScript Type Definitions & Interfaces
+├── middleware.ts          # Edge middleware for Role-Based Authorization
+└── next.config.ts         # Next.js configuration
+```
+
+---
+
 ## 📸 Application Screenshots
 
-*(Replace these placeholders with actual images of your application before final submission)*
+_(Replace these placeholders with actual images of your application before final submission)_
 
 ### Admin Role
+
 - **Admin Dashboard:** `[Insert Screenshot Here]`
 - **Booking Approvals (KYC View):** `[Insert Screenshot Here]`
 - **Invoice Verification:** `[Insert Screenshot Here]`
 
 ### Tenant Role
+
 - **Browse Rooms & Filter:** `[Insert Screenshot Here]`
 - **Tenant Dashboard:** `[Insert Screenshot Here]`
 - **Payment Proof Upload:** `[Insert Screenshot Here]`
@@ -102,24 +140,24 @@ Comprehensive frontend application for Emerald Kos (Boarding House) Management, 
 ## 🔐 Architecture & Security Highlights
 
 1. **Role-Based Authorization (Middleware)**
-   - Implemented at the edge using Next.js `proxy.ts` (Middleware).
-   - `/admin/*` routes are strictly protected and redirect `tenant` users.
-   - `/user/*` routes are strictly protected and redirect `admin` users.
-   - Unauthenticated users are forced to `/login`.
+    - Implemented at the edge using Next.js `proxy.ts` (Middleware).
+    - `/admin/*` routes are strictly protected and redirect `tenant` users.
+    - `/user/*` routes are strictly protected and redirect `admin` users.
+    - Unauthenticated users are forced to `/login`.
 
 2. **Server & Client Components**
-   - Utilizes Next.js Server Components for heavy data fetching (e.g., Admin Dashboard Summary) to improve initial load and SEO.
-   - Client Components are used for interactive UI elements (Forms, Charts, Search/Filters).
+    - Utilizes Next.js Server Components for heavy data fetching (e.g., Admin Dashboard Summary) to improve initial load and SEO.
+    - Client Components are used for interactive UI elements (Forms, Charts, Search/Filters).
 
 3. **Robust Form Handling & File Uploads**
-   - Seamless integration with Backend DTOs.
-   - Custom HTTP Client automatically formats `multipart/form-data` boundaries for uploading images (KYC, Maintenance) to Cloudinary via the backend.
+    - Seamless integration with Backend DTOs.
+    - Custom HTTP Client automatically formats `multipart/form-data` boundaries for uploading images (KYC, Maintenance) to Cloudinary via the backend.
 
 ---
 
 ## 📊 Database Entity Relationship Diagram (ERD)
 
-*(This is the data structure utilized by the Backend API which drives this Frontend)*
+_(This is the data structure utilized by the Backend API which drives this Frontend)_
 
 ```mermaid
 erDiagram
