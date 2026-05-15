@@ -21,10 +21,10 @@ import Link from "next/link";
 import { InvoiceStatus } from "@/types/invoices";
 
 const badgeClassByStatus: Record<InvoiceStatus, string> = {
-    paid: "bg-blue-50 border-blue-200 text-blue-900",
-    expired: "bg-gray-50 border-gray-200 text-gray-900",
-    partially_paid: "bg-green-50 border-green-200 text-green-900",
+    paid: "bg-green-50 border-green-200 text-green-900",
     unpaid: "bg-amber-50 border-amber-200 text-amber-900",
+    expired: "bg-gray-50 border-gray-200 text-gray-900",
+    partially_paid: "bg-blue-50 border-blue-200 text-blue-900",
     cancelled: "bg-red-50 border-red-200 text-red-900",
 };
 
@@ -37,10 +37,10 @@ const badgeIconByStatus: Record<InvoiceStatus, LucideIcon> = {
 };
 
 const badgeIconColorByStatus: Record<InvoiceStatus, string> = {
-    paid: "oklch(62.3% 0.214 259.815)",
+    paid: "green",
     expired: "gray",
-    partially_paid: "green",
-    unpaid: "orange",
+    partially_paid: "blue",
+    unpaid: "amber",
     cancelled: "red",
 };
 
@@ -123,10 +123,16 @@ function TransactionRow({
 
                 <div className="flex gap-4 items-center">
                     <div className="flex flex-col items-end">
-                        <p className="text-muted-foreground text-sm">Total Tagihan</p>
+                        <p className="text-muted-foreground text-sm">
+                            Total Tagihan
+                        </p>
                         <p className="font-bold text-lg">{amountLabel}</p>
                         <Badge variant="secondary" className={badgeClass}>
-                            <BadgeIcon color={badgeIconColor} size={14} className="mr-1" />
+                            <BadgeIcon
+                                color={badgeIconColor}
+                                size={14}
+                                className="mr-1"
+                            />
                             {statusLabel ??
                                 status[0].toUpperCase() + status.slice(1)}
                         </Badge>

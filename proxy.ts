@@ -30,9 +30,9 @@ export async function proxy(req: NextRequest) {
     // Redirect authenticated users away from auth pages based on their role
     if (isAuthRoute && session?.userId) {
         if (session.role === "admin") {
-            return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+            return NextResponse.redirect(new URL("/admin/", req.url));
         } else {
-            return NextResponse.redirect(new URL("/user/dashboard", req.url));
+            return NextResponse.redirect(new URL("/user/", req.url));
         }
     }
 

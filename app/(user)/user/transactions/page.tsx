@@ -111,7 +111,7 @@ function Page() {
                     <CardContent className="flex gap-2 justify-between">
                         <div className="flex flex-col">
                             <p className="text-sm text-muted-foreground">
-                                Dibayar
+                                Lunas
                             </p>
                             <p className="text-xl font-bold">
                                 {invoices?.filter((i) => i.status === "paid")
@@ -197,7 +197,7 @@ function Page() {
                         { value: "semua", label: "Semua" },
                         { value: "unpaid", label: "Belum Bayar" },
                         { value: "partialy_paid", label: "Dibayar Sebagian" },
-                        { value: "paid", label: "Dibayar" },
+                        { value: "paid", label: "Lunas" },
                         { value: "expired", label: "Expired" },
                     ],
                 }}
@@ -206,26 +206,24 @@ function Page() {
                 {invoices && invoices.length > 0 ? (
                     invoices.map((invoice) => {
                         const iconBg =
-                            invoice.booking.status === "confirmed"
-                                ? "bg-green-100"
-                                : invoice.booking.status === "pending_payment"
-                                  ? "bg-amber-100"
-                                  : invoice.booking.status ===
-                                      "pending_approval"
-                                    ? "bg-purple-100"
-                                    : invoice.booking.status === "cancelled"
+                            invoice.status === "unpaid"
+                                ? "bg-amber-100"
+                                : invoice.status === "paid"
+                                  ? "bg-green-100"
+                                  : invoice.status === "partially_paid"
+                                    ? "bg-blue-100"
+                                    : invoice.status === "cancelled"
                                       ? "bg-red-100"
                                       : "bg-gray-100";
 
                         const iconColor =
-                            invoice.booking.status === "confirmed"
-                                ? "oklch(72.3% 0.219 149.579)"
-                                : invoice.booking.status === "pending_payment"
-                                  ? "orange"
-                                  : invoice.booking.status ===
-                                      "pending_approval"
-                                    ? "purple"
-                                    : invoice.booking.status === "cancelled"
+                            invoice.status === "unpaid"
+                                ? "amber"
+                                : invoice.status === "paid"
+                                  ? "green"
+                                  : invoice.status === "partially_paid"
+                                    ? "blue"
+                                    : invoice.status === "cancelled"
                                       ? "red"
                                       : "gray";
 
@@ -235,9 +233,9 @@ function Page() {
                                 : invoice.status === "partially_paid"
                                   ? "Dibayar Sebagian"
                                   : invoice.status === "paid"
-                                    ? "Dibayar"
+                                    ? "Lunas"
                                     : invoice.status === "expired"
-                                      ? "Expired"
+                                      ? "Kedaluwarsa"
                                       : "Dibatalkan";
 
                         const actionLabel =

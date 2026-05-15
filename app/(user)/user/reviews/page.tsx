@@ -107,7 +107,7 @@ function Page() {
                                         ))}
                                     </div>
                                 </div>
-                                <div className="bg-muted/50 p-3 rounded-md text-sm text-foreground/80 min-h-[60px]">
+                                <div className="bg-muted/50 p-3 rounded-md text-sm text-foreground/80 min-h-15">
                                     {review.comment ? (
                                         <p>{review.comment}</p>
                                     ) : (
