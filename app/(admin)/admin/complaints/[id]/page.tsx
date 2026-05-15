@@ -293,19 +293,33 @@ export default function ComplaintDetailPage() {
                         <CardContent className="pt-4">
                             {complaint.images && complaint.images.length > 0 ? (
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                    {complaint.images.map((img) => (
-                                        <div
-                                            key={img.id}
-                                            className="relative aspect-square rounded-lg overflow-hidden border"
-                                        >
-                                            <Image
-                                                src={img.imageUrl}
-                                                alt="Lampiran Komplain"
-                                                fill
-                                                className="object-cover hover:scale-105 transition-transform"
-                                            />
-                                        </div>
-                                    ))}
+                                    {complaint.images.map((img, index) => {
+                                        const imageUrl =
+                                            typeof img === "string"
+                                                ? img
+                                                : (img as any).imageUrl;
+                                        if (!imageUrl) return null;
+                                        return (
+                                            <div
+                                                key={
+                                                    typeof img === "string"
+                                                        ? `img-${index}`
+                                                        : (img as any).id ||
+                                                          `img-${index}`
+                                                }
+                                                className="relative aspect-square rounded-lg overflow-hidden border"
+                                            >
+                                                <Image
+                                                    src={imageUrl
+                                                        .replace(/[`"]/g, "")
+                                                        .trim()}
+                                                    alt="Lampiran Komplain"
+                                                    fill
+                                                    className="object-cover hover:scale-105 transition-transform"
+                                                />
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <div className="text-center py-8 text-muted-foreground bg-gray-50 rounded-lg border border-dashed">
