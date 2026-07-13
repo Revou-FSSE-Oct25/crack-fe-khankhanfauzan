@@ -158,15 +158,15 @@ _(Replace these placeholders with actual images of your application before final
 
 ### Admin Role
 
-- **Admin Dashboard:** `[Insert Screenshot Here]`
-- **Booking Approvals (KYC View):** `[Insert Screenshot Here]`
-- **Invoice Verification:** `[Insert Screenshot Here]`
+- **Admin Dashboard:** ![Admin Dashboard](/public/admin_dashboard.png)
+- **Booking Approvals (KYC View):** ![Admin KYC](public/admin_kyc.png)
+- **Invoice Verification:** ![Admin Invoice Verification](public/admin_invoice_verification.png)
 
 ### Tenant Role
 
-- **Browse Rooms & Filter:** `[Insert Screenshot Here]`
-- **Tenant Dashboard:** `[Insert Screenshot Here]`
-- **Payment Proof Upload:** `[Insert Screenshot Here]`
+- **Browse Rooms & Filter:** ![Browse Room](public/browse_room.png)
+- **Tenant Dashboard:** ![Tenant Dashboard](public/tenant_dashboard.png)
+- **Payment Proof Upload:** ![Payment Proof Upload](public/tenant_upload_payment_prove.png)
 
 ---
 
