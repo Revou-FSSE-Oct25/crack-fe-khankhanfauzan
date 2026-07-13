@@ -20,6 +20,27 @@ import type { LoginActionResult } from "@/actions/auth";
 import { ApiError } from "@/lib/http/client";
 import { Spinner } from "@/components/ui/spinner";
 
+type LoginFormValues = {
+    email: string;
+    password: string;
+    remember: boolean;
+};
+
+const demoAccounts = [
+    {
+        role: "Tenant",
+        email: "tenant@mail.com",
+        password: "Tenant123!",
+        description: "Masuk sebagai penghuni.",
+    },
+    {
+        role: "Admin",
+        email: "admin@mail.com",
+        password: "Admin123!",
+        description: "Masuk sebagai admin.",
+    },
+] as const;
+
 function Page() {
     const router = useRouter();
 
@@ -30,14 +51,17 @@ function Page() {
     const {
         register,
         handleSubmit,
+        setValue,
         formState: { errors },
-    } = useForm<{ email: string; password: string; remember: boolean }>();
+    } = useForm<LoginFormValues>();
 
-    const onSubmit = async (data: {
-        email: string;
-        password: string;
-        remember: boolean;
-    }) => {
+    const fillDemoAccount = (account: (typeof demoAccounts)[number]) => {
+        setErrorMsg(null);
+        setValue("email", account.email, { shouldValidate: true });
+        setValue("password", account.password, { shouldValidate: true });
+    };
+
+    const onSubmit = async (data: LoginFormValues) => {
         setErrorMsg(null);
         setLoading(true);
         try {
@@ -168,6 +192,60 @@ function Page() {
                                         Daftar Sekarang
                                     </Button>
                                 </Link>
+                            </div>
+                            <div className="rounded-2xl border border-border/80 bg-muted/30 p-4">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold">
+                                        Akun Demo
+                                    </p>
+                                    <p className="text-muted-foreground text-xs">
+                                        Gunakan akun berikut untuk mencoba akses
+                                        tenant atau admin.
+                                    </p>
+                                </div>
+                                <div className="mt-3 space-y-3">
+                                    {demoAccounts.map((account) => (
+                                        <div
+                                            key={account.role}
+                                            className="rounded-xl border bg-background p-3"
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="space-y-1">
+                                                    <p className="text-sm font-medium">
+                                                        {account.role}
+                                                    </p>
+                                                    <p className="text-muted-foreground text-xs">
+                                                        {account.description}
+                                                    </p>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        fillDemoAccount(account)
+                                                    }
+                                                >
+                                                    Gunakan
+                                                </Button>
+                                            </div>
+                                            <div className="mt-3 space-y-1 text-xs">
+                                                <p className="text-muted-foreground">
+                                                    Email:
+                                                    <span className="ml-2 rounded bg-muted px-2 py-1 font-mono text-foreground">
+                                                        {account.email}
+                                                    </span>
+                                                </p>
+                                                <p className="text-muted-foreground">
+                                                    Password:
+                                                    <span className="ml-2 rounded bg-muted px-2 py-1 font-mono text-foreground">
+                                                        {account.password}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </FieldGroup>
                     </FieldSet>

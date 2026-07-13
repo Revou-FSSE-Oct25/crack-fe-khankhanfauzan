@@ -101,9 +101,42 @@ crack-fe-khankhanfauzan/
 ├── actions/               # Next.js Server Actions (e.g., auth session handling)
 ├── app/                   # Next.js App Router (Pages, Layouts, APIs)
 │   ├── (admin)/           # Route group for Admin panel pages
+│   │   └── admin/         # Admin dashboard & management pages
+│   │       ├── dashboard/     # Admin summary dashboard
+│   │       ├── bookings/      # Booking approvals & KYC review
+│   │       ├── complaints/    # Maintenance tickets & complaint handling
+│   │       ├── facilities/    # Facility management pages
+│   │       ├── invoices/      # Invoice verification & payment review
+│   │       ├── maintenances/  # Maintenance status updates
+│   │       ├── rooms/         # Room inventory & availability management
+│   │       └── users/         # Tenant account & profile management
 │   ├── (auth)/            # Route group for Login/Register pages
+│   │   ├── login/             # User login page
+│   │   ├── register/          # User registration page
+│   │   └── forgot-password/   # Password recovery page
 │   ├── (marketing)/       # Route group for Landing page
-│   └── (user)/            # Route group for Tenant/User dashboard pages
+│   │   ├── layout.tsx         # Marketing page layout
+│   │   └── page.tsx           # Public landing page
+│   ├── (user)/            # Route group for Tenant/User dashboard pages
+│   │   └── user/          # Tenant dashboard & account pages
+│   │       ├── dashboard/     # Tenant home overview
+│   │       ├── bookings/      # Tenant booking list
+│   │       ├── complaints/    # Tenant maintenance requests
+│   │       ├── facilities/    # Room facility details
+│   │       ├── invoices/      # Invoice history & status
+│   │       ├── maintenances/  # Maintenance request tracking
+│   │       ├── profile/       # Tenant profile & KYC flows
+│   │       ├── reviews/       # Room review submission
+│   │       ├── rooms/         # Room browsing and selection
+│   │       └── transactions/  # Payment transaction history
+│   ├── login/              # Login page (standalone route)
+│   ├── register/           # Register page (standalone route)
+│   ├── forgot-password/    # Forgot password page (standalone route)
+│   ├── rooms/              # Public room listing and detail routes
+│   ├── favicon.ico
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
 ├── components/            # Reusable UI Components
 │   ├── layout/            # Layout components (Sidebar, Navbar)
 │   ├── sections/          # Page-specific sections
